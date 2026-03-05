@@ -1,2153 +1,292 @@
 <!DOCTYPE html>
-<html lang="ms" class="h-full">
+<html lang="ms">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>MyHafazan MTSD — Sistem Pengurusan Hafazan</title>
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📖</text></svg>"/>
-  <!-- Tailwind CSS -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Chart.js -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
-  <!-- jsPDF for certificate generation -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <!-- Supabase -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-  <style>
-    [x-cloak] { display: none !important; }
-    .sidebar-link { @apply flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-150; }
-    .sidebar-link.active { @apply bg-emerald-700 text-white shadow-md; }
-    .sidebar-link:not(.active) { @apply text-emerald-100 hover:bg-emerald-700/50; }
-    .card { @apply bg-white rounded-2xl shadow-sm border border-gray-100 p-5; }
-    .badge-ahead   { @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-purple-100 text-purple-700; }
-    .badge-ontrack { @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-700; }
-    .badge-behind  { @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-orange-100 text-orange-700; }
-    .badge-debt    { @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-700; }
-    .health-bar-fill { transition: width 0.6s ease-in-out; }
-    @keyframes pulse-soft { 0%,100%{opacity:1} 50%{opacity:.6} }
-    .pulse { animation: pulse-soft 2s infinite; }
-    .juz-block { transition: all 0.3s ease; }
-    .juz-block:hover { transform: scale(1.08); }
-    .toast { position:fixed; bottom:1.5rem; right:1.5rem; z-index:9999; max-width:20rem; }
-    .page-section { display:none; }
-    .page-section.active { display:block; }
-    .loading-spinner { border:3px solid #f3f4f6; border-top-color:#10b981; border-radius:50%; width:2rem; height:2rem; animation: spin 0.7s linear infinite; }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    ::-webkit-scrollbar { width:5px; } ::-webkit-scrollbar-thumb { background:#d1fae5; border-radius:9999px; }
-    .modal-overlay { backdrop-filter: blur(4px); }
-  </style>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            emerald: { 750: '#059669' }
-          }
-        }
-      }
-    }
-  </script>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>MyHafazan MTSD – Log Masuk</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --purple: #6B21A8;
+    --purple-light: #7C3AED;
+    --purple-dark: #4C1D95;
+    --purple-glow: #A78BFA;
+    --green: #16A34A;
+    --green-light: #22C55E;
+    --gold: #D97706;
+    --white: #FFFFFF;
+    --slate-50: #F8FAFC;
+    --slate-100: #F1F5F9;
+    --slate-200: #E2E8F0;
+    --slate-600: #475569;
+    --slate-800: #1E293B;
+    --slate-900: #0F172A;
+  }
+
+  body {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    background: var(--slate-900);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    position: relative;
+  }
+
+  /* Animated background */
+  .bg-orbs { position: fixed; inset: 0; z-index: 0; overflow: hidden; }
+  .orb {
+    position: absolute; border-radius: 50%;
+    filter: blur(80px); opacity: 0.15;
+    animation: float 8s ease-in-out infinite;
+  }
+  .orb-1 { width: 500px; height: 500px; background: var(--purple); top: -100px; left: -100px; animation-delay: 0s; }
+  .orb-2 { width: 400px; height: 400px; background: var(--green); bottom: -80px; right: -80px; animation-delay: -4s; }
+  .orb-3 { width: 300px; height: 300px; background: var(--purple-glow); top: 50%; left: 50%; animation-delay: -2s; opacity: 0.08; }
+
+  @keyframes float {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    33% { transform: translate(30px, -30px) scale(1.05); }
+    66% { transform: translate(-20px, 20px) scale(0.95); }
+  }
+
+  .bg-pattern {
+    position: fixed; inset: 0; z-index: 0;
+    background-image: radial-gradient(circle at 1px 1px, rgba(255,255,255,0.03) 1px, transparent 0);
+    background-size: 40px 40px;
+  }
+
+  /* Card */
+  .login-wrapper {
+    position: relative; z-index: 10;
+    width: 100%; max-width: 460px;
+    padding: 20px;
+  }
+
+  .logo-area { text-align: center; margin-bottom: 32px; }
+
+  .logo-icon {
+    width: 72px; height: 72px;
+    background: linear-gradient(135deg, var(--purple), var(--purple-light));
+    border-radius: 20px;
+    display: inline-flex; align-items: center; justify-content: center;
+    margin-bottom: 16px;
+    box-shadow: 0 0 40px rgba(107,33,168,0.4);
+    position: relative;
+  }
+  .logo-icon::after {
+    content: ''; position: absolute; inset: -2px;
+    border-radius: 22px;
+    background: linear-gradient(135deg, var(--purple-glow), transparent);
+    z-index: -1;
+  }
+  .logo-icon i { font-size: 32px; color: white; }
+
+  .logo-title {
+    font-family: 'Amiri', serif; font-size: 28px;
+    color: white; letter-spacing: 1px; margin-bottom: 4px;
+  }
+  .logo-title span { color: var(--purple-glow); }
+
+  .logo-sub {
+    font-size: 12px; color: rgba(255,255,255,0.4);
+    letter-spacing: 3px; text-transform: uppercase;
+  }
+
+  .card {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 24px; padding: 40px;
+    backdrop-filter: blur(20px);
+    box-shadow: 0 25px 50px rgba(0,0,0,0.5);
+  }
+
+  .card-title { font-size: 22px; font-weight: 700; color: white; margin-bottom: 6px; }
+  .card-sub { font-size: 13px; color: rgba(255,255,255,0.45); margin-bottom: 28px; }
+
+  .field { margin-bottom: 18px; }
+  .field label {
+    display: block; font-size: 12px; font-weight: 600;
+    color: rgba(255,255,255,0.6); letter-spacing: 0.5px;
+    margin-bottom: 8px; text-transform: uppercase;
+  }
+  .input-wrap { position: relative; }
+  .input-wrap i {
+    position: absolute; left: 14px; top: 50%;
+    transform: translateY(-50%); color: rgba(255,255,255,0.3); font-size: 15px;
+  }
+  .field input {
+    width: 100%; background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.12); border-radius: 12px;
+    padding: 13px 14px 13px 42px; font-size: 14px;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    color: white; outline: none; transition: all 0.2s;
+  }
+  .field input::placeholder { color: rgba(255,255,255,0.25); }
+  .field input:focus {
+    border-color: var(--purple-light); background: rgba(124,58,237,0.1);
+    box-shadow: 0 0 0 3px rgba(124,58,237,0.15);
+  }
+
+  .btn-login {
+    width: 100%;
+    background: linear-gradient(135deg, var(--purple), var(--purple-light));
+    color: white; border: none; border-radius: 12px; padding: 14px;
+    font-size: 15px; font-weight: 600; font-family: 'Plus Jakarta Sans', sans-serif;
+    cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;
+    transition: all 0.2s; box-shadow: 0 4px 20px rgba(107,33,168,0.4); margin-top: 8px;
+  }
+  .btn-login:hover { transform: translateY(-1px); box-shadow: 0 8px 25px rgba(107,33,168,0.5); }
+  .btn-login:active { transform: translateY(0); }
+  .btn-login:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+  /* Google Sign-In Button */
+  .btn-google {
+    width: 100%; background: white; color: #1E293B;
+    border: 1px solid rgba(255,255,255,0.15); border-radius: 12px; padding: 13px;
+    font-size: 14px; font-weight: 600; font-family: 'Plus Jakarta Sans', sans-serif;
+    cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px;
+    transition: all 0.2s; margin-top: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  }
+  .btn-google:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(0,0,0,0.3); background: #f8f8f8; }
+  .btn-google:active { transform: translateY(0); }
+  .btn-google svg { flex-shrink: 0; }
+
+  .spinner {
+    width: 16px; height: 16px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: white; border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+  }
+  .hidden { display: none !important; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .auth-error {
+    background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.3);
+    border-radius: 10px; padding: 10px 14px; color: #FCA5A5;
+    font-size: 13px; margin-bottom: 16px;
+  }
+
+  .forgot-link { text-align: right; margin-top: -10px; margin-bottom: 18px; }
+  .forgot-link button {
+    background: none; border: none; cursor: pointer;
+    color: var(--purple-glow); font-size: 12px;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+  }
+  .forgot-link button:hover { text-decoration: underline; }
+
+  .divider {
+    display: flex; align-items: center; gap: 12px;
+    margin: 24px 0 4px; color: rgba(255,255,255,0.3); font-size: 12px;
+  }
+  .divider::before, .divider::after {
+    content: ''; flex: 1; height: 1px; background: rgba(255,255,255,0.1);
+  }
+
+  .divider-roles {
+    display: flex; align-items: center; gap: 12px;
+    margin: 20px 0 16px; color: rgba(255,255,255,0.2); font-size: 12px;
+  }
+  .divider-roles::before, .divider-roles::after {
+    content: ''; flex: 1; height: 1px; background: rgba(255,255,255,0.1);
+  }
+
+  .role-badges { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+  .badge {
+    padding: 4px 12px; border-radius: 20px;
+    font-size: 11px; font-weight: 600; border: 1px solid;
+  }
+  .badge-admin { color: #C4B5FD; border-color: rgba(196,181,253,0.3); background: rgba(196,181,253,0.08); }
+  .badge-teacher { color: #86EFAC; border-color: rgba(134,239,172,0.3); background: rgba(134,239,172,0.08); }
+  .badge-parent { color: #FCD34D; border-color: rgba(252,211,77,0.3); background: rgba(252,211,77,0.08); }
+
+  .footer-text { text-align: center; margin-top: 24px; font-size: 11px; color: rgba(255,255,255,0.2); }
+
+  @media (max-width: 480px) { .card { padding: 28px 20px; } }
+</style>
 </head>
-
-<body class="h-full bg-gray-50 font-sans text-gray-800 antialiased">
-
-<!-- ════════════════════════════════════════════════════
-     AUTH SCREEN
-═════════════════════════════════════════════════════ -->
-<div id="auth-screen" class="min-h-screen flex items-center justify-center bg-gradient-to-br from-emerald-900 via-emerald-800 to-teal-700 p-4">
-  <div class="w-full max-w-md">
-    <!-- Logo -->
-    <div class="text-center mb-8">
-      <div class="inline-flex items-center justify-center w-20 h-20 bg-white/10 rounded-3xl mb-4 backdrop-blur-sm">
-        <span class="text-5xl">📖</span>
-      </div>
-      <h1 class="text-3xl font-bold text-white tracking-tight">MyHafazan <span class="text-emerald-300">MTSD</span></h1>
-      <p class="text-emerald-200 text-sm mt-1">Sistem Pengurusan Hafazan Al-Quran</p>
-    </div>
-
-    <!-- Auth Card -->
-    <div class="bg-white rounded-3xl shadow-2xl p-8">
-      <!-- Tabs -->
-      <div class="flex bg-gray-100 rounded-xl p-1 mb-6">
-        <button id="tab-login" onclick="switchAuthTab('login')"
-          class="flex-1 py-2 rounded-lg text-sm font-semibold transition-all bg-white shadow text-emerald-700">
-          Log Masuk
-        </button>
-        <button id="tab-signup" onclick="switchAuthTab('signup')"
-          class="flex-1 py-2 rounded-lg text-sm font-semibold transition-all text-gray-500 hover:text-gray-700">
-          Daftar
-        </button>
-      </div>
-
-      <!-- Login Form -->
-      <form id="login-form" onsubmit="handleLogin(event)" class="space-y-4">
-        <div>
-          <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">E-mel</label>
-          <input type="email" id="login-email" required placeholder="guru@sekolah.edu.my"
-            class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-transparent transition"/>
-        </div>
-        <div>
-          <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Kata Laluan</label>
-          <input type="password" id="login-password" required placeholder="••••••••"
-            class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-transparent transition"/>
-        </div>
-        <button type="submit" id="login-btn"
-          class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl transition flex items-center justify-center gap-2">
-          <span>Log Masuk</span>
-        </button>
-        <p class="text-center text-xs text-gray-400 mt-3">Demo: demo@myhafazan.my / demo1234</p>
-      </form>
-
-      <!-- Signup Form (hidden) -->
-      <form id="signup-form" onsubmit="handleSignup(event)" class="space-y-4 hidden">
-        <div>
-          <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Nama Penuh</label>
-          <input type="text" id="signup-name" required placeholder="Ustaz Ahmad bin Ali"
-            class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-transparent transition"/>
-        </div>
-        <div>
-          <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">E-mel</label>
-          <input type="email" id="signup-email" required placeholder="guru@sekolah.edu.my"
-            class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-transparent transition"/>
-        </div>
-        <div>
-          <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Kata Laluan</label>
-          <input type="password" id="signup-password" required placeholder="Min 8 aksara"
-            class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-transparent transition"/>
-        </div>
-        <div>
-          <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Peranan</label>
-          <select id="signup-role"
-            class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-transparent">
-            <option value="teacher">Guru Tahfiz / Murobbi</option>
-            <option value="school_admin">Pentadbir Sekolah</option>
-            <option value="parent">Ibu Bapa / Penjaga</option>
-            <option value="student">Pelajar</option>
-          </select>
-        </div>
-        <button type="submit"
-          class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl transition">
-          Daftar Akaun
-        </button>
-      </form>
-    </div>
-
-    <p class="text-center text-emerald-200/60 text-xs mt-6">
-      MyHafazan MTSD v2.0 — Powered by Supabase & GitHub Pages
-    </p>
-  </div>
+<body>
+<div class="bg-orbs">
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
 </div>
+<div class="bg-pattern"></div>
 
-<!-- ════════════════════════════════════════════════════
-     MAIN APP (hidden until auth)
-═════════════════════════════════════════════════════ -->
-<div id="app" class="hidden h-full">
+<div class="login-wrapper">
+  <div class="logo-area">
+    <div class="logo-icon"><i class="fas fa-book-quran"></i></div>
+    <div class="logo-title">My<span>Hafazan</span></div>
+    <div class="logo-sub">MTSD · Sistem Pengurusan Tahfiz</div>
+  </div>
 
-  <!-- Layout wrapper -->
-  <div class="flex h-screen overflow-hidden">
+  <div class="card">
+    <div class="card-title">Selamat Datang</div>
+    <div class="card-sub">Log masuk untuk meneruskan sesi anda</div>
 
-    <!-- ── SIDEBAR ─────────────────────────────────────── -->
-    <aside id="sidebar"
-      class="w-64 flex-shrink-0 bg-gradient-to-b from-emerald-900 to-emerald-800 flex flex-col shadow-2xl z-20 transition-transform duration-300"
-      style="min-height:100vh">
+    <div id="authError" class="auth-error hidden"></div>
 
-      <!-- Brand -->
-      <div class="p-5 border-b border-emerald-700/50">
-        <div class="flex items-center gap-3">
-          <div class="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center text-2xl">📖</div>
-          <div>
-            <h1 class="text-white font-bold text-base leading-tight">MyHafazan</h1>
-            <p class="text-emerald-300 text-xs">MTSD v2.0</p>
-          </div>
+    <form id="loginForm">
+      <div class="field">
+        <label>Emel</label>
+        <div class="input-wrap">
+          <i class="fas fa-envelope"></i>
+          <input type="email" id="emailInput" placeholder="nama@sekolah.edu.my" required autocomplete="email" />
         </div>
       </div>
 
-      <!-- User info -->
-      <div class="px-4 py-3 border-b border-emerald-700/50">
-        <div class="flex items-center gap-3">
-          <div id="nav-avatar" class="w-9 h-9 rounded-xl bg-emerald-500 flex items-center justify-center text-white font-bold text-sm">G</div>
-          <div class="min-w-0">
-            <p id="nav-name" class="text-white text-sm font-medium truncate">Guru</p>
-            <p id="nav-role-badge" class="text-emerald-300 text-xs truncate">Guru Tahfiz</p>
-          </div>
+      <div class="field">
+        <label>Kata Laluan</label>
+        <div class="input-wrap">
+          <i class="fas fa-lock"></i>
+          <input type="password" id="passwordInput" placeholder="••••••••" required autocomplete="current-password" />
         </div>
       </div>
 
-      <!-- Navigation -->
-      <nav class="flex-1 p-3 space-y-1 overflow-y-auto">
-        <p class="text-emerald-400 text-xs font-semibold uppercase tracking-widest px-4 py-2">Menu Utama</p>
-
-        <a href="#" onclick="navigateTo('dashboard')" class="sidebar-link active" data-page="dashboard">
-          <span class="text-lg">🏠</span><span>Dashboard</span>
-        </a>
-        <a href="#" onclick="navigateTo('halaqah')" class="sidebar-link" data-page="halaqah">
-          <span class="text-lg">👥</span><span>Halaqah Saya</span>
-        </a>
-        <a href="#" onclick="navigateTo('quick-log')" class="sidebar-link" data-page="quick-log">
-          <span class="text-lg">✍️</span><span>Rekod Bacaan</span>
-        </a>
-        <a href="#" onclick="navigateTo('students')" class="sidebar-link" data-page="students">
-          <span class="text-lg">📚</span><span>Senarai Pelajar</span>
-        </a>
-        <a href="#" onclick="navigateTo('debts')" class="sidebar-link" data-page="debts">
-          <span class="text-lg">⚠️</span><span>Hutang Halaman</span>
-          <span id="debt-badge" class="ml-auto bg-red-500 text-white text-xs rounded-full px-1.5 py-0.5 hidden">0</span>
-        </a>
-
-        <p class="text-emerald-400 text-xs font-semibold uppercase tracking-widest px-4 py-2 mt-3">Analitik</p>
-        <a href="#" onclick="navigateTo('analytics')" class="sidebar-link" data-page="analytics">
-          <span class="text-lg">📊</span><span>Analitik Kelas</span>
-        </a>
-        <a href="#" onclick="navigateTo('rpt')" class="sidebar-link" data-page="rpt">
-          <span class="text-lg">📅</span><span>Tetapan RPT</span>
-        </a>
-
-        <p class="text-emerald-400 text-xs font-semibold uppercase tracking-widest px-4 py-2 mt-3 admin-only hidden">Pentadbir</p>
-        <a href="#" onclick="navigateTo('admin')" class="sidebar-link admin-only hidden" data-page="admin">
-          <span class="text-lg">⚙️</span><span>Panel Admin</span>
-        </a>
-        <a href="#" onclick="navigateTo('upload')" class="sidebar-link admin-only hidden" data-page="upload">
-          <span class="text-lg">📤</span><span>Muat Naik CSV</span>
-        </a>
-        <a href="#" onclick="navigateTo('holidays')" class="sidebar-link admin-only hidden" data-page="holidays">
-          <span class="text-lg">🗓️</span><span>Kalendar Cuti</span>
-        </a>
-      </nav>
-
-      <!-- Logout -->
-      <div class="p-3 border-t border-emerald-700/50">
-        <button onclick="handleLogout()"
-          class="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-emerald-200 hover:bg-red-500/20 hover:text-red-300 transition">
-          <span>🚪</span><span>Log Keluar</span>
-        </button>
+      <div class="forgot-link">
+        <button type="button" id="forgotPasswordBtn">Lupa kata laluan?</button>
       </div>
-    </aside>
 
-    <!-- ── MAIN CONTENT ───────────────────────────────── -->
-    <main class="flex-1 flex flex-col overflow-hidden bg-gray-50">
+      <button type="submit" class="btn-login" id="loginBtn">
+        <div class="spinner hidden" id="loginSpinner"></div>
+        <i class="fas fa-right-to-bracket"></i>
+        Log Masuk
+      </button>
+    </form>
 
-      <!-- Top Bar -->
-      <header class="bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between flex-shrink-0 shadow-sm">
-        <div>
-          <h2 id="page-title" class="text-lg font-bold text-gray-800">Dashboard</h2>
-          <p id="page-subtitle" class="text-xs text-gray-400 mt-0.5">Selamat datang ke MyHafazan MTSD</p>
-        </div>
-        <div class="flex items-center gap-3">
-          <div id="rpt-status-chip" class="hidden items-center gap-1.5 px-3 py-1.5 bg-emerald-50 rounded-full text-xs font-medium text-emerald-700 border border-emerald-100">
-            <span class="w-2 h-2 bg-emerald-500 rounded-full"></span>
-            <span id="rpt-chip-text">RPT Aktif</span>
-          </div>
-          <span id="header-date" class="text-xs text-gray-400 hidden sm:block"></span>
-        </div>
-      </header>
+    <!-- Google Sign-In -->
+    <div class="divider">atau</div>
+    <button type="button" class="btn-google" id="googleSignInBtn">
+      <svg width="18" height="18" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+        <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+        <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+        <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+      </svg>
+      Log Masuk dengan Google
+    </button>
 
-      <!-- Page Content Area -->
-      <div class="flex-1 overflow-y-auto p-6">
-
-        <!-- ═══ PAGE: DASHBOARD ═══════════════════════════ -->
-        <section id="page-dashboard" class="page-section active space-y-6">
-          <!-- KPI Cards -->
-          <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <div class="card bg-gradient-to-br from-purple-500 to-purple-600 text-white border-0">
-              <p class="text-purple-100 text-xs font-semibold uppercase tracking-wide">🟣 Melebihi Sukatan</p>
-              <p id="kpi-ahead" class="text-3xl font-bold mt-2">—</p>
-              <p id="kpi-ahead-pct" class="text-purple-200 text-xs mt-1">daripada jumlah pelajar</p>
-            </div>
-            <div class="card bg-gradient-to-br from-emerald-500 to-emerald-600 text-white border-0">
-              <p class="text-emerald-100 text-xs font-semibold uppercase tracking-wide">🟢 Mencapai Sukatan</p>
-              <p id="kpi-ontrack" class="text-3xl font-bold mt-2">—</p>
-              <p id="kpi-ontrack-pct" class="text-emerald-200 text-xs mt-1">daripada jumlah pelajar</p>
-            </div>
-            <div class="card bg-gradient-to-br from-orange-400 to-orange-500 text-white border-0">
-              <p class="text-orange-100 text-xs font-semibold uppercase tracking-wide">🟠 Ketinggalan</p>
-              <p id="kpi-behind" class="text-3xl font-bold mt-2">—</p>
-              <p id="kpi-behind-pct" class="text-orange-200 text-xs mt-1">daripada jumlah pelajar</p>
-            </div>
-            <div class="card bg-gradient-to-br from-red-500 to-red-600 text-white border-0">
-              <p class="text-red-100 text-xs font-semibold uppercase tracking-wide">🔴 Ada Hutang</p>
-              <p id="kpi-debt" class="text-3xl font-bold mt-2">—</p>
-              <p id="kpi-debt-pct" class="text-red-200 text-xs mt-1">pelajar perlu perhatian</p>
-            </div>
-          </div>
-
-          <!-- Charts Row -->
-          <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <div class="card">
-              <h3 class="font-semibold text-gray-700 mb-4">Pecahan Status Pelajar</h3>
-              <div class="relative h-56">
-                <canvas id="status-pie-chart"></canvas>
-              </div>
-            </div>
-            <div class="card">
-              <h3 class="font-semibold text-gray-700 mb-4">Bilangan Pelajar Mengikut Status</h3>
-              <div class="relative h-56">
-                <canvas id="status-bar-chart"></canvas>
-              </div>
-            </div>
-          </div>
-
-          <!-- Health Bar -->
-          <div class="card">
-            <div class="flex items-center justify-between mb-3">
-              <h3 class="font-semibold text-gray-700">Kesihatan Kelas Keseluruhan</h3>
-              <span id="health-score-label" class="text-sm font-bold text-emerald-600">—%</span>
-            </div>
-            <div class="w-full bg-gray-100 rounded-full h-6 overflow-hidden flex">
-              <div id="hb-ahead"  class="health-bar-fill h-full bg-purple-500 flex items-center justify-center text-white text-xs font-bold" style="width:0%"></div>
-              <div id="hb-ontrack" class="health-bar-fill h-full bg-emerald-500 flex items-center justify-center text-white text-xs font-bold" style="width:0%"></div>
-              <div id="hb-behind" class="health-bar-fill h-full bg-orange-400 flex items-center justify-center text-white text-xs font-bold" style="width:0%"></div>
-              <div id="hb-debt"   class="health-bar-fill h-full bg-red-500 flex items-center justify-center text-white text-xs font-bold" style="width:0%"></div>
-            </div>
-            <div class="flex gap-4 mt-2 flex-wrap text-xs text-gray-500">
-              <span class="flex items-center gap-1"><span class="w-3 h-3 rounded-sm bg-purple-500 inline-block"></span>Melebihi</span>
-              <span class="flex items-center gap-1"><span class="w-3 h-3 rounded-sm bg-emerald-500 inline-block"></span>Mencapai</span>
-              <span class="flex items-center gap-1"><span class="w-3 h-3 rounded-sm bg-orange-400 inline-block"></span>Ketinggalan</span>
-              <span class="flex items-center gap-1"><span class="w-3 h-3 rounded-sm bg-red-500 inline-block"></span>Ada Hutang</span>
-            </div>
-          </div>
-
-          <!-- Quick stats + RPT -->
-          <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            <div class="card col-span-2">
-              <div class="flex items-center justify-between mb-3">
-                <h3 class="font-semibold text-gray-700">RPT — Kedudukan Semasa</h3>
-                <button onclick="navigateTo('rpt')" class="text-xs text-emerald-600 hover:underline">Ubah Tetapan →</button>
-              </div>
-              <div id="rpt-dashboard-info" class="space-y-2 text-sm text-gray-500">
-                <p class="text-gray-400 text-xs italic">Tiada tetapan RPT. Sila tetapkan dalam menu RPT.</p>
-              </div>
-            </div>
-            <div class="card">
-              <h3 class="font-semibold text-gray-700 mb-3">Khatam 🌟</h3>
-              <div id="khatam-counter" class="text-center py-4">
-                <p class="text-5xl font-black text-emerald-600" id="khatam-total">—</p>
-                <p class="text-xs text-gray-400 mt-1">Pelajar Khatam Juzuk</p>
-              </div>
-            </div>
-          </div>
-
-          <!-- Debt Histogram -->
-          <div class="card">
-            <h3 class="font-semibold text-gray-700 mb-4">Hutang Halaman Pelajar (Paling Tinggi)</h3>
-            <div class="relative h-48">
-              <canvas id="debt-histogram"></canvas>
-            </div>
-          </div>
-        </section>
-
-        <!-- ═══ PAGE: HALAQAH DASHBOARD ═══════════════════ -->
-        <section id="page-halaqah" class="page-section space-y-5">
-          <div class="flex items-center justify-between">
-            <div>
-              <h3 class="font-bold text-lg text-gray-700" id="halaqah-title">Halaqah Saya</h3>
-              <p class="text-sm text-gray-400" id="halaqah-subtitle">—</p>
-            </div>
-            <div class="flex gap-2">
-              <input type="text" id="student-search" placeholder="🔍 Cari pelajar..."
-                class="border border-gray-200 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-emerald-400 outline-none w-52"
-                oninput="filterStudentTable(this.value)"/>
-              <button onclick="filterDebtStudents()"
-                class="bg-red-500 text-white px-4 py-2 rounded-xl text-sm font-semibold hover:bg-red-600 transition">
-                ⚠️ Cari Hutang
-              </button>
-              <button onclick="exportTableCSV()"
-                class="bg-emerald-600 text-white px-4 py-2 rounded-xl text-sm font-semibold hover:bg-emerald-700 transition">
-                ⬇️ Eksport
-              </button>
-            </div>
-          </div>
-
-          <!-- Filter row -->
-          <div class="flex gap-3 flex-wrap">
-            <select id="filter-status" onchange="applyFilters()" class="border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-emerald-400">
-              <option value="">Semua Status</option>
-              <option value="ahead">🟣 Melebihi Sukatan</option>
-              <option value="on_track">🟢 Mencapai Sukatan</option>
-              <option value="behind">🟠 Ketinggalan</option>
-              <option value="debt">🔴 Ada Hutang</option>
-            </select>
-            <select id="filter-juz" onchange="applyFilters()" class="border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-emerald-400">
-              <option value="">Semua Juzuk</option>
-              <script>for(let i=1;i<=30;i++) document.write(`<option value="${i}">Juzuk ${i}</option>`)</script>
-            </select>
-          </div>
-
-          <!-- Student table -->
-          <div class="card overflow-hidden p-0">
-            <div class="overflow-x-auto">
-              <table class="w-full text-sm" id="student-table">
-                <thead>
-                  <tr class="bg-gray-50 border-b border-gray-100">
-                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Nama Pelajar</th>
-                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Juzuk</th>
-                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">MS Semasa</th>
-                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">MS RPT</th>
-                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Status</th>
-                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Hutang</th>
-                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Khatam</th>
-                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Tindakan</th>
-                  </tr>
-                </thead>
-                <tbody id="student-table-body">
-                  <tr><td colspan="8" class="text-center py-8 text-gray-400">
-                    <div class="loading-spinner mx-auto"></div>
-                  </td></tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </section>
-
-        <!-- ═══ PAGE: QUICK LOG ════════════════════════════ -->
-        <section id="page-quick-log" class="page-section max-w-2xl mx-auto space-y-5">
-          <div class="card">
-            <h3 class="font-bold text-lg text-gray-700 mb-1">✍️ Rekod Bacaan Harian</h3>
-            <p class="text-sm text-gray-400 mb-5">Pilih pelajar dan masukkan halaman yang dibaca hari ini.</p>
-
-            <form id="log-form" onsubmit="handleQuickLog(event)" class="space-y-4">
-              <div>
-                <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Pelajar</label>
-                <select id="log-student" required
-                  class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-400 outline-none"
-                  onchange="loadStudentForLog(this.value)">
-                  <option value="">— Pilih Pelajar —</option>
-                </select>
-              </div>
-
-              <!-- Student quick info -->
-              <div id="log-student-info" class="hidden bg-emerald-50 border border-emerald-100 rounded-xl p-4 space-y-2">
-                <div class="flex justify-between text-sm">
-                  <span class="text-gray-500">Juzuk Semasa:</span>
-                  <span id="info-juz" class="font-bold text-emerald-700">—</span>
-                </div>
-                <div class="flex justify-between text-sm">
-                  <span class="text-gray-500">Halaman Semasa:</span>
-                  <span id="info-page" class="font-bold text-emerald-700">—</span>
-                </div>
-                <div class="flex justify-between text-sm">
-                  <span class="text-gray-500">Sasaran RPT:</span>
-                  <span id="info-rpt" class="font-bold text-blue-600">—</span>
-                </div>
-                <div class="flex justify-between text-sm">
-                  <span class="text-gray-500">Status:</span>
-                  <span id="info-status">—</span>
-                </div>
-                <div class="flex justify-between text-sm">
-                  <span class="text-gray-500">Hutang Semasa:</span>
-                  <span id="info-debt" class="font-bold text-red-600">—</span>
-                </div>
-              </div>
-
-              <div class="grid grid-cols-2 gap-4">
-                <div>
-                  <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Tarikh</label>
-                  <input type="date" id="log-date" required
-                    class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-400 outline-none"/>
-                </div>
-                <div>
-                  <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Halaman Ditamat (Muka Surat)</label>
-                  <input type="number" id="log-page" min="1" max="604" required placeholder="e.g. 125"
-                    class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-400 outline-none"
-                    oninput="previewLogResult(this.value)"/>
-                </div>
-              </div>
-
-              <div class="grid grid-cols-2 gap-4">
-                <div>
-                  <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Skor (0-100)</label>
-                  <input type="number" id="log-score" min="0" max="100" placeholder="85"
-                    class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-400 outline-none"
-                    oninput="autoGrade(this.value)"/>
-                </div>
-                <div>
-                  <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Gred (Auto)</label>
-                  <select id="log-grade"
-                    class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-400 outline-none">
-                    <option value="">—</option>
-                    <option value="A">A (90-100)</option>
-                    <option value="B">B (75-89)</option>
-                    <option value="C">C (60-74)</option>
-                    <option value="D">D (40-59)</option>
-                    <option value="F">F (&lt;40)</option>
-                  </select>
-                </div>
-              </div>
-
-              <div>
-                <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Nota (Opsyenal)</label>
-                <textarea id="log-notes" rows="2" placeholder="Komen atau catatan tambahan..."
-                  class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-400 outline-none resize-none"></textarea>
-              </div>
-
-              <!-- Debt preview -->
-              <div id="debt-preview" class="hidden bg-red-50 border border-red-100 rounded-xl p-4">
-                <div class="flex items-center gap-2">
-                  <span class="text-2xl">⚠️</span>
-                  <div>
-                    <p class="font-semibold text-red-700 text-sm">Amaran Hutang</p>
-                    <p id="debt-preview-text" class="text-red-600 text-xs"></p>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Khatam preview -->
-              <div id="khatam-preview" class="hidden bg-yellow-50 border border-yellow-200 rounded-xl p-4">
-                <div class="flex items-center gap-2">
-                  <span class="text-2xl">🌟</span>
-                  <div>
-                    <p class="font-semibold text-yellow-700 text-sm">Tahniah! Khatam Juzuk</p>
-                    <p id="khatam-preview-text" class="text-yellow-600 text-xs"></p>
-                  </div>
-                </div>
-              </div>
-
-              <button type="submit" id="log-submit-btn"
-                class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl transition flex items-center justify-center gap-2">
-                <span>💾</span><span>Simpan Rekod</span>
-              </button>
-            </form>
-          </div>
-
-          <!-- Recent logs -->
-          <div class="card">
-            <h3 class="font-semibold text-gray-700 mb-3">Rekod Terkini</h3>
-            <div id="recent-logs" class="space-y-2 text-sm text-gray-500">
-              <p class="text-gray-400 text-xs italic">Pilih pelajar untuk lihat rekod terkini.</p>
-            </div>
-          </div>
-        </section>
-
-        <!-- ═══ PAGE: STUDENT PROFILE ══════════════════════ -->
-        <section id="page-student-profile" class="page-section space-y-5">
-          <!-- Profile Header -->
-          <div class="card bg-gradient-to-r from-emerald-600 to-teal-600 text-white border-0">
-            <div class="flex items-start gap-5">
-              <div id="profile-avatar" class="w-20 h-20 bg-white/20 rounded-2xl flex items-center justify-center text-4xl font-black">A</div>
-              <div class="flex-1">
-                <h2 id="profile-name" class="text-2xl font-bold">—</h2>
-                <p id="profile-halaqah" class="text-emerald-100 text-sm mt-0.5">—</p>
-                <div class="flex gap-6 mt-4 flex-wrap">
-                  <div><p class="text-emerald-200 text-xs">Juzuk Terkini</p><p id="profile-juz" class="text-2xl font-black">—</p></div>
-                  <div><p class="text-emerald-200 text-xs">Muka Surat</p><p id="profile-page" class="text-2xl font-black">—</p></div>
-                  <div><p class="text-emerald-200 text-xs">RPT Sasaran</p><p id="profile-rpt-page" class="text-2xl font-black text-yellow-300">—</p></div>
-                  <div><p class="text-emerald-200 text-xs">Status</p><p id="profile-status" class="text-lg font-bold mt-1">—</p></div>
-                  <div><p class="text-emerald-200 text-xs">Hutang</p><p id="profile-debt" class="text-2xl font-black text-red-300">—</p></div>
-                  <div><p class="text-emerald-200 text-xs">Khatam</p><p id="profile-khatam" class="text-2xl font-black text-yellow-300">🌟 —</p></div>
-                </div>
-              </div>
-              <button onclick="navigateTo('halaqah')" class="text-white/70 hover:text-white text-2xl">←</button>
-            </div>
-          </div>
-
-          <!-- Juz Map -->
-          <div class="card">
-            <h3 class="font-semibold text-gray-700 mb-4">🗺️ Peta Juzuk (30 Juzuk)</h3>
-            <div id="juz-map" class="grid grid-cols-5 sm:grid-cols-10 gap-2"></div>
-            <p class="text-xs text-gray-400 mt-3">
-              <span class="inline-block w-3 h-3 bg-emerald-500 rounded mr-1"></span>Khatam &nbsp;
-              <span class="inline-block w-3 h-3 bg-blue-400 rounded mr-1"></span>Sedang Dihafaz &nbsp;
-              <span class="inline-block w-3 h-3 bg-gray-200 rounded mr-1"></span>Belum Dimulai
-            </p>
-          </div>
-
-          <!-- Juz Score Bar -->
-          <div class="card">
-            <div class="flex items-center justify-between mb-3">
-              <h3 class="font-semibold text-gray-700">Kemajuan Juzuk Semasa</h3>
-              <span id="juz-score-pct" class="text-2xl font-black text-emerald-600">—%</span>
-            </div>
-            <div class="w-full bg-gray-100 rounded-full h-4 overflow-hidden">
-              <div id="juz-score-bar" class="h-full bg-gradient-to-r from-emerald-400 to-teal-500 rounded-full transition-all duration-700" style="width:0%"></div>
-            </div>
-          </div>
-
-          <!-- Charts Row -->
-          <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <div class="card">
-              <h3 class="font-semibold text-gray-700 mb-3">Perkembangan Halaman (30 Hari)</h3>
-              <canvas id="progress-chart" height="180"></canvas>
-            </div>
-            <div class="card">
-              <h3 class="font-semibold text-gray-700 mb-3">Sejarah Khatam Juzuk</h3>
-              <canvas id="khatam-chart" height="180"></canvas>
-            </div>
-          </div>
-
-          <!-- Debt Detail & Generate Certificate -->
-          <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <div class="card">
-              <h3 class="font-semibold text-gray-700 mb-3">⚠️ Hutang Tertunggak</h3>
-              <div id="profile-debt-list" class="space-y-2 text-sm">
-                <p class="text-gray-400 text-xs italic">Tiada hutang tertunggak.</p>
-              </div>
-            </div>
-            <div class="card flex flex-col items-center justify-center text-center py-6">
-              <span class="text-5xl mb-3">🎓</span>
-              <h3 class="font-bold text-gray-700 mb-1">Sijil Kemajuan</h3>
-              <p class="text-xs text-gray-400 mb-4">Jana sijil khatam juzuk untuk pelajar ini</p>
-              <button id="cert-btn" onclick="generateCertificate()"
-                class="bg-gradient-to-r from-emerald-600 to-teal-600 text-white px-6 py-2.5 rounded-xl font-semibold text-sm hover:shadow-lg transition">
-                Jana Sijil PDF
-              </button>
-            </div>
-          </div>
-        </section>
-
-        <!-- ═══ PAGE: DEBTS ════════════════════════════════ -->
-        <section id="page-debts" class="page-section space-y-5">
-          <div class="card">
-            <h3 class="font-bold text-lg text-gray-700 mb-4">⚠️ Senarai Hutang Halaman</h3>
-            <div class="overflow-x-auto">
-              <table class="w-full text-sm">
-                <thead>
-                  <tr class="bg-gray-50 border-b border-gray-100">
-                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Pelajar</th>
-                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Halaman Tertunggak</th>
-                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Tarikh</th>
-                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Status</th>
-                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Tindakan</th>
-                  </tr>
-                </thead>
-                <tbody id="debts-table-body">
-                  <tr><td colspan="5" class="text-center py-8 text-gray-400">
-                    <div class="loading-spinner mx-auto"></div>
-                  </td></tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </section>
-
-        <!-- ═══ PAGE: ANALYTICS ═══════════════════════════ -->
-        <section id="page-analytics" class="page-section space-y-5">
-          <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <div class="card">
-              <h3 class="font-semibold text-gray-700 mb-4">Trend Perkembangan Kelas (30 Hari)</h3>
-              <canvas id="class-trend-chart" height="200"></canvas>
-            </div>
-            <div class="card">
-              <h3 class="font-semibold text-gray-700 mb-4">Histogram Hutang Halaman</h3>
-              <canvas id="class-debt-chart" height="200"></canvas>
-            </div>
-          </div>
-          <div class="card">
-            <h3 class="font-semibold text-gray-700 mb-4">Markah Purata Mengikut Pelajar</h3>
-            <canvas id="score-chart" height="120"></canvas>
-          </div>
-        </section>
-
-        <!-- ═══ PAGE: RPT SETTINGS ════════════════════════ -->
-        <section id="page-rpt" class="page-section max-w-2xl mx-auto space-y-5">
-          <div class="card">
-            <h3 class="font-bold text-lg text-gray-700 mb-1">📅 Tetapan Rancangan Pengajaran Tahunan</h3>
-            <p class="text-sm text-gray-400 mb-5">Konfigurasi RPT untuk mengira sasaran halaman automatik.</p>
-
-            <form id="rpt-form" onsubmit="saveRPTSettings(event)" class="space-y-4">
-              <div class="grid grid-cols-2 gap-4">
-                <div>
-                  <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Tahun Akademik</label>
-                  <input type="text" id="rpt-year" value="" required placeholder="2025"
-                    class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-400 outline-none"/>
-                </div>
-                <div>
-                  <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Tingkatan / Darjah</label>
-                  <input type="text" id="rpt-level" required placeholder="Tingkatan 1"
-                    class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-400 outline-none"/>
-                </div>
-              </div>
-              <div class="grid grid-cols-2 gap-4">
-                <div>
-                  <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Halaman Mula</label>
-                  <input type="number" id="rpt-start-page" min="1" max="604" required value="1"
-                    class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-400 outline-none"/>
-                </div>
-                <div>
-                  <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Jumlah Halaman Sasaran</label>
-                  <input type="number" id="rpt-total-pages" min="1" required value="120"
-                    class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-400 outline-none"
-                    oninput="previewRPT()"/>
-                </div>
-              </div>
-              <div class="grid grid-cols-2 gap-4">
-                <div>
-                  <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Tarikh Mula</label>
-                  <input type="date" id="rpt-start-date" required
-                    class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-400 outline-none"
-                    oninput="previewRPT()"/>
-                </div>
-                <div>
-                  <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Tarikh Tamat</label>
-                  <input type="date" id="rpt-end-date" required
-                    class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-400 outline-none"
-                    oninput="previewRPT()"/>
-                </div>
-              </div>
-
-              <!-- RPT Preview -->
-              <div id="rpt-preview" class="hidden bg-blue-50 border border-blue-100 rounded-xl p-4 space-y-2 text-sm">
-                <p class="font-semibold text-blue-700">Preview Pengiraan RPT</p>
-                <div class="grid grid-cols-2 gap-2 text-gray-600">
-                  <div>Jumlah Hari Sekolah: <span id="prev-school-days" class="font-bold text-blue-700">—</span></div>
-                  <div>Halaman Sehari: <span id="prev-daily-pages" class="font-bold text-blue-700">—</span></div>
-                  <div>Sasaran Hari Ini: <span id="prev-today-target" class="font-bold text-blue-700">—</span></div>
-                  <div>Halaman Tamat: <span id="prev-end-page" class="font-bold text-blue-700">—</span></div>
-                </div>
-              </div>
-
-              <button type="submit"
-                class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl transition">
-                💾 Simpan Tetapan RPT
-              </button>
-            </form>
-          </div>
-        </section>
-
-        <!-- ═══ PAGE: ADMIN ═══════════════════════════════ -->
-        <section id="page-admin" class="page-section space-y-5">
-          <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
-            <div class="card">
-              <h3 class="font-bold text-gray-700 mb-3">⚙️ Urus Halaqah</h3>
-              <form onsubmit="createHalaqah(event)" class="space-y-3">
-                <input type="text" id="new-halaqah-name" placeholder="Nama Halaqah (e.g. Al-Fatihah)" required
-                  class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-400 outline-none"/>
-                <input type="text" id="new-halaqah-level" placeholder="Tingkatan / Darjah" required
-                  class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-400 outline-none"/>
-                <button type="submit"
-                  class="w-full py-2.5 bg-emerald-600 text-white rounded-xl text-sm font-semibold hover:bg-emerald-700 transition">
-                  + Tambah Halaqah
-                </button>
-              </form>
-              <div id="halaqah-list" class="mt-4 space-y-2"></div>
-            </div>
-            <div class="card">
-              <h3 class="font-bold text-gray-700 mb-3">👤 Tambah Pelajar Manual</h3>
-              <form onsubmit="addStudent(event)" class="space-y-3">
-                <input type="text" id="new-student-name" placeholder="Nama Penuh Pelajar" required
-                  class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-400 outline-none"/>
-                <select id="new-student-halaqah" required
-                  class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-400 outline-none">
-                  <option value="">— Pilih Halaqah —</option>
-                </select>
-                <div class="grid grid-cols-2 gap-3">
-                  <input type="number" id="new-student-page" placeholder="Halaman Semasa" min="1" max="604" value="1"
-                    class="px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-400 outline-none"/>
-                  <input type="number" id="new-student-juz" placeholder="Juzuk" min="1" max="30" value="1"
-                    class="px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-400 outline-none"/>
-                </div>
-                <button type="submit"
-                  class="w-full py-2.5 bg-emerald-600 text-white rounded-xl text-sm font-semibold hover:bg-emerald-700 transition">
-                  + Tambah Pelajar
-                </button>
-              </form>
-            </div>
-          </div>
-        </section>
-
-        <!-- ═══ PAGE: CSV UPLOAD ══════════════════════════ -->
-        <section id="page-upload" class="page-section max-w-2xl mx-auto space-y-5">
-          <div class="card">
-            <h3 class="font-bold text-lg text-gray-700 mb-1">📤 Muat Naik Pelajar (CSV)</h3>
-            <p class="text-sm text-gray-400 mb-5">Format: <code class="bg-gray-100 px-1 rounded">name, halaqah_id, current_page, current_juz</code></p>
-
-            <div id="csv-drop-zone"
-              class="border-2 border-dashed border-emerald-200 rounded-2xl p-10 text-center hover:border-emerald-400 transition cursor-pointer"
-              ondragover="event.preventDefault()" ondrop="handleCSVDrop(event)"
-              onclick="document.getElementById('csv-file').click()">
-              <span class="text-5xl">📂</span>
-              <p class="text-gray-500 mt-3 font-medium">Seret & Letak fail CSV di sini</p>
-              <p class="text-gray-400 text-sm mt-1">atau klik untuk pilih fail</p>
-              <input type="file" id="csv-file" accept=".csv" class="hidden" onchange="handleCSVFile(event)"/>
-            </div>
-
-            <div id="csv-preview" class="hidden mt-5">
-              <div class="flex items-center justify-between mb-2">
-                <p class="font-semibold text-gray-700">Preview (<span id="csv-row-count">0</span> pelajar)</p>
-                <div class="flex gap-2">
-                  <select id="csv-halaqah-select"
-                    class="border border-gray-200 rounded-xl px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-emerald-400">
-                    <option value="">— Pilih Halaqah —</option>
-                  </select>
-                  <button onclick="confirmCSVUpload()"
-                    class="bg-emerald-600 text-white px-4 py-1.5 rounded-xl text-sm font-semibold hover:bg-emerald-700 transition">
-                    ✅ Import Sekarang
-                  </button>
-                </div>
-              </div>
-              <div class="overflow-x-auto max-h-64">
-                <table class="w-full text-xs border border-gray-100 rounded-xl overflow-hidden">
-                  <thead class="bg-gray-50">
-                    <tr>
-                      <th class="px-3 py-2 text-left text-gray-500">#</th>
-                      <th class="px-3 py-2 text-left text-gray-500">Nama</th>
-                      <th class="px-3 py-2 text-left text-gray-500">Halaman</th>
-                      <th class="px-3 py-2 text-left text-gray-500">Juzuk</th>
-                    </tr>
-                  </thead>
-                  <tbody id="csv-preview-body"></tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <!-- ═══ PAGE: HOLIDAYS ════════════════════════════ -->
-        <section id="page-holidays" class="page-section max-w-2xl mx-auto space-y-5">
-          <div class="card">
-            <h3 class="font-bold text-lg text-gray-700 mb-4">🗓️ Urus Cuti Sekolah</h3>
-            <form onsubmit="addHoliday(event)" class="flex gap-3 mb-5">
-              <input type="date" id="holiday-date" required
-                class="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-400 outline-none"/>
-              <input type="text" id="holiday-name" placeholder="Nama cuti (e.g. Hari Raya)" required
-                class="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-400 outline-none"/>
-              <button type="submit"
-                class="bg-emerald-600 text-white px-5 py-2.5 rounded-xl text-sm font-semibold hover:bg-emerald-700 transition">
-                + Tambah
-              </button>
-            </form>
-            <div id="holidays-list" class="space-y-2">
-              <p class="text-gray-400 text-xs italic">Tiada cuti didaftarkan.</p>
-            </div>
-          </div>
-        </section>
-
-        <!-- ═══ PAGE: STUDENTS LIST ═══════════════════════ -->
-        <section id="page-students" class="page-section space-y-5">
-          <div class="flex justify-between items-center">
-            <h3 class="font-bold text-lg text-gray-700">📚 Semua Pelajar</h3>
-            <input type="text" placeholder="🔍 Cari nama pelajar..."
-              class="border border-gray-200 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-emerald-400 outline-none w-52"
-              oninput="filterStudentsList(this.value)"/>
-          </div>
-          <div class="card overflow-hidden p-0">
-            <div class="overflow-x-auto">
-              <table class="w-full text-sm">
-                <thead>
-                  <tr class="bg-gray-50 border-b border-gray-100">
-                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Nama</th>
-                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Halaqah</th>
-                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Juzuk</th>
-                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">M/S Semasa</th>
-                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Status</th>
-                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Tindakan</th>
-                  </tr>
-                </thead>
-                <tbody id="students-list-body">
-                  <tr><td colspan="6" class="text-center py-8 text-gray-400">
-                    <div class="loading-spinner mx-auto"></div>
-                  </td></tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </section>
-
-      </div><!-- /page content -->
-    </main>
-  </div><!-- /layout -->
-</div><!-- /app -->
-
-<!-- ════════════════════════════════════════════════════
-     TOAST NOTIFICATION
-═════════════════════════════════════════════════════ -->
-<div id="toast-container" class="toast space-y-2"></div>
-
-<!-- ════════════════════════════════════════════════════
-     MODAL: Generic confirm
-═════════════════════════════════════════════════════ -->
-<div id="confirm-modal" class="fixed inset-0 z-50 hidden items-center justify-center modal-overlay bg-black/40">
-  <div class="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm mx-4">
-    <h3 id="modal-title" class="font-bold text-lg text-gray-800 mb-2">Pengesahan</h3>
-    <p id="modal-text" class="text-sm text-gray-500 mb-5"></p>
-    <div class="flex gap-3">
-      <button onclick="closeModal()" class="flex-1 py-2.5 border border-gray-200 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50">Batal</button>
-      <button id="modal-confirm-btn" class="flex-1 py-2.5 bg-emerald-600 text-white rounded-xl text-sm font-medium hover:bg-emerald-700">Sahkan</button>
+    <div class="divider-roles">Akses mengikut peranan</div>
+    <div class="role-badges">
+      <span class="badge badge-admin"><i class="fas fa-shield-halved"></i> Admin</span>
+      <span class="badge badge-teacher"><i class="fas fa-chalkboard-user"></i> Murabbi</span>
+      <span class="badge badge-parent"><i class="fas fa-users"></i> Wali</span>
     </div>
   </div>
+
+  <div class="footer-text">© 2025 MyHafazan MTSD. Hak cipta terpelihara.</div>
 </div>
 
-<!-- ════════════════════════════════════════════════════
-     MAIN JAVASCRIPT
-═════════════════════════════════════════════════════ -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="auth.js"></script>
 <script>
-// ── SUPABASE CONFIG ──────────────────────────────────────────
-// TODO: Replace with your Supabase project credentials
-const SUPABASE_URL = 'https://cetdddmtulrvdfzuzoxy.supabase.co';
-const SUPABASE_ANON = 'sb_publishable_45FbpYcJXkvTkQ9t16sztQ_Rgg7Emn-';
-const { createClient } = supabase;
-const db = createClient(SUPABASE_URL, SUPABASE_ANON, {
-  auth: { persistSession: true, storageKey: 'myhafazan_auth' }
-});
-
-// ── APP STATE ────────────────────────────────────────────────
-let APP = {
-  user: null,
-  profile: null,
-  currentHalaqah: null,
-  students: [],
-  studentsRaw: [],
-  rptSettings: null,
-  holidays: [],
-  csvData: [],
-  charts: {},
-  currentStudentId: null,
-  realtimeChannel: null
-};
-
-// ── JUZ DATA ─────────────────────────────────────────────────
-const JUZ_ENDS   = [21,41,61,81,101,121,141,161,181,201,221,241,262,282,302,322,342,362,382,402,422,442,462,482,502,522,542,562,582,604];
-const JUZ_STARTS = [1,...JUZ_ENDS.slice(0,-1).map(p=>p+1)];
-
-function getJuzFromPage(p) {
-  for (let i=0;i<30;i++) if (p<=JUZ_ENDS[i]) return i+1;
-  return 30;
-}
-function getJuzProgress(p) {
-  const juz=getJuzFromPage(p), s=JUZ_STARTS[juz-1], e=JUZ_ENDS[juz-1];
-  return { juz, percent: Math.round(((p-s+1)/(e-s+1))*100) };
-}
-function getCompletedJuz(p) {
-  return JUZ_ENDS.reduce((a,e,i)=>{ if(p>=e) a.push(i+1); return a; },[]);
-}
-
-// ── RPT ENGINE ───────────────────────────────────────────────
-function countSchoolDays(startDate, endDate, holidays=[]) {
-  const hSet = new Set(holidays.map(h => typeof h==='string' ? h : h.date));
-  let count=0, cur=new Date(startDate), end=new Date(endDate);
-  cur.setHours(0,0,0,0); end.setHours(0,0,0,0);
-  while(cur<=end){
-    const d=cur.getDay(), iso=cur.toISOString().split('T')[0];
-    if(d!==0&&d!==6&&!hSet.has(iso)) count++;
-    cur.setDate(cur.getDate()+1);
-  }
-  return count;
-}
-
-function getExpectedPage(rpt, today=new Date(), holidays=[]) {
-  if(!rpt) return null;
-  const {start_page, total_pages_target, start_date, end_date} = rpt;
-  const totalDays   = countSchoolDays(start_date, end_date, holidays);
-  const elapsed     = countSchoolDays(start_date, today, holidays);
-  if(totalDays===0) return start_page;
-  return Math.min(Math.round(start_page + (total_pages_target/totalDays)*elapsed), start_page+total_pages_target);
-}
-
-function getStatus(currentPage, expectedPage, debtCount=0) {
-  if(debtCount>0)           return { status:'debt',     label:'Ada Hutang',          icon:'🔴', color:'red',    cls:'badge-debt' };
-  if(currentPage>expectedPage) return { status:'ahead',  label:'Melebihi Sukatan', icon:'🟣', color:'purple', cls:'badge-ahead' };
-  if(currentPage===expectedPage) return {status:'on_track',label:'Mencapai Sukatan',icon:'🟢', color:'green',  cls:'badge-ontrack'};
-  return                              { status:'behind',  label:'Ketinggalan',         icon:'🟠', color:'orange', cls:'badge-behind' };
-}
-
-function autoGrade(score) {
-  const s=parseInt(score);
-  const el=document.getElementById('log-grade');
-  if(s>=90) el.value='A';
-  else if(s>=75) el.value='B';
-  else if(s>=60) el.value='C';
-  else if(s>=40) el.value='D';
-  else if(s>=0)  el.value='F';
-}
-
-// ── AUTH ─────────────────────────────────────────────────────
-function switchAuthTab(tab) {
-  document.getElementById('login-form').classList.toggle('hidden', tab!=='login');
-  document.getElementById('signup-form').classList.toggle('hidden', tab!=='signup');
-  document.getElementById('tab-login').className = tab==='login'
-    ? 'flex-1 py-2 rounded-lg text-sm font-semibold transition-all bg-white shadow text-emerald-700'
-    : 'flex-1 py-2 rounded-lg text-sm font-semibold transition-all text-gray-500 hover:text-gray-700';
-  document.getElementById('tab-signup').className = tab==='signup'
-    ? 'flex-1 py-2 rounded-lg text-sm font-semibold transition-all bg-white shadow text-emerald-700'
-    : 'flex-1 py-2 rounded-lg text-sm font-semibold transition-all text-gray-500 hover:text-gray-700';
-}
-
-async function handleLogin(e) {
-  e.preventDefault();
-  const btn = document.getElementById('login-btn');
-  btn.innerHTML = '<div class="loading-spinner" style="width:1.2rem;height:1.2rem;border-width:2px"></div>';
-  btn.disabled = true;
-  try {
-    const email    = document.getElementById('login-email').value;
-    const password = document.getElementById('login-password').value;
-    const { data, error } = await db.auth.signInWithPassword({ email, password });
-    if(error) throw error;
-    showToast('✅ Berjaya log masuk!', 'success');
-  } catch(err) {
-    showToast('❌ ' + (err.message || 'Log masuk gagal'), 'error');
-  } finally {
-    btn.innerHTML = '<span>Log Masuk</span>';
-    btn.disabled  = false;
-  }
-}
-
-async function handleSignup(e) {
-  e.preventDefault();
-  try {
-    const name  = document.getElementById('signup-name').value;
-    const email = document.getElementById('signup-email').value;
-    const pass  = document.getElementById('signup-password').value;
-    const role  = document.getElementById('signup-role').value;
-    const { error } = await db.auth.signUp({ email, password: pass,
-      options: { data: { full_name: name, role } } });
-    if(error) throw error;
-    showToast('✅ Akaun dibuat! Sila semak e-mel untuk pengesahan.', 'success');
-    switchAuthTab('login');
-  } catch(err) {
-    showToast('❌ ' + (err.message || 'Pendaftaran gagal'), 'error');
-  }
-}
-
-async function handleLogout() {
-  await db.auth.signOut();
-  APP = { user:null, profile:null, currentHalaqah:null, students:[], studentsRaw:[], rptSettings:null, holidays:[], csvData:[], charts:{}, currentStudentId:null, realtimeChannel:null };
-  document.getElementById('app').classList.add('hidden');
-  document.getElementById('auth-screen').classList.remove('hidden');
-  showToast('👋 Anda telah log keluar.', 'info');
-}
-
-// ── APP INIT ─────────────────────────────────────────────────
-db.auth.onAuthStateChange(async (event, session) => {
-  if(session?.user) {
-    APP.user = session.user;
-    document.getElementById('auth-screen').classList.add('hidden');
-    document.getElementById('app').classList.remove('hidden');
-    await initApp();
-  } else {
-    document.getElementById('auth-screen').classList.remove('hidden');
-    document.getElementById('app').classList.add('hidden');
-  }
-});
-
-async function initApp() {
-  try {
-    // Load profile
-    const { data: profile } = await db.from('profiles').select('*, schools(*)').eq('id', APP.user.id).single();
-    APP.profile = profile;
-
-    // Update nav UI
-    const initials = (profile?.full_name||'G').split(' ').map(n=>n[0]).join('').substring(0,2).toUpperCase();
-    document.getElementById('nav-avatar').textContent = initials;
-    document.getElementById('nav-name').textContent   = profile?.full_name || 'Pengguna';
-    const roleLabels = { super_admin:'Super Admin', school_admin:'Pentadbir Sekolah', teacher:'Guru Tahfiz', student:'Pelajar', parent:'Ibu Bapa' };
-    document.getElementById('nav-role-badge').textContent = roleLabels[profile?.role] || profile?.role || 'Pengguna';
-
-    // Show admin items
-    if(['school_admin','super_admin'].includes(profile?.role)) {
-      document.querySelectorAll('.admin-only').forEach(el => el.classList.remove('hidden'));
-    }
-
-    // Header date
-    const now = new Date();
-    document.getElementById('header-date').textContent = now.toLocaleDateString('ms-MY', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
-
-    // Set RPT year default
-    document.getElementById('rpt-year').value = now.getFullYear();
-
-    // Set log date default
-    document.getElementById('log-date').value = now.toISOString().split('T')[0];
-
-    // Load halaqah for teacher
-    await loadTeacherHalaqah();
-
-    // Load RPT settings
-    await loadRPTSettings();
-
-    // Load holidays
-    await loadHolidays();
-
-    // Initial dashboard render
-    await loadDashboardData();
-
-    // Setup realtime
-    setupRealtime();
-
-  } catch(err) {
-    console.error('Init error:', err);
-    showToast('⚠️ Ralat memuatkan data: ' + err.message, 'error');
-  }
-}
-
-// ── DATA LOADING ─────────────────────────────────────────────
-async function loadTeacherHalaqah() {
-  try {
-    const role = APP.profile?.role;
-    let query = db.from('halaqah').select('*');
-    if(role === 'teacher') query = query.eq('teacher_id', APP.user.id);
-    else if(APP.profile?.school_id) query = query.eq('school_id', APP.profile.school_id);
-
-    const { data } = await query.order('name');
-    if(data && data.length > 0) {
-      APP.currentHalaqah = data[0];
-      document.getElementById('halaqah-title').textContent  = APP.currentHalaqah.name;
-      document.getElementById('halaqah-subtitle').textContent = APP.currentHalaqah.level + ' — ' + new Date().getFullYear();
-
-      // Populate halaqah selects
-      ['new-student-halaqah','csv-halaqah-select'].forEach(id => {
-        const el = document.getElementById(id);
-        if(!el) return;
-        el.innerHTML = '<option value="">— Pilih Halaqah —</option>';
-        data.forEach(h => el.innerHTML += `<option value="${h.id}">${h.name} (${h.level})</option>`);
-      });
-    }
-  } catch(err) { console.error('loadTeacherHalaqah:', err); }
-}
-
-async function loadStudentsForHalaqah() {
-  if(!APP.currentHalaqah) return;
-  try {
-    const { data } = await db.from('students')
-      .select('*, halaqah(name,level), debts(count)')
-      .eq('halaqah_id', APP.currentHalaqah.id)
-      .order('name');
-    APP.studentsRaw = data || [];
-
-    const expectedPage = getExpectedPage(APP.rptSettings, new Date(), APP.holidays);
-
-    APP.students = (data||[]).map(s => ({
-      ...s,
-      expectedPage,
-      debtCount: s.debts?.[0]?.count || 0,
-      status: getStatus(s.current_page, expectedPage, s.debts?.[0]?.count || 0)
-    }));
-
-    // Populate student select in log form
-    const sel = document.getElementById('log-student');
-    sel.innerHTML = '<option value="">— Pilih Pelajar —</option>';
-    APP.students.forEach(s => {
-      sel.innerHTML += `<option value="${s.id}">${s.name}</option>`;
-    });
-
-  } catch(err) { console.error('loadStudents:', err); }
-}
-
-async function loadRPTSettings() {
-  if(!APP.profile?.school_id) return;
-  try {
-    const { data } = await db.from('rpt_settings')
-      .select('*')
-      .eq('school_id', APP.profile.school_id)
-      .eq('academic_year', new Date().getFullYear().toString())
-      .maybeSingle();
-    APP.rptSettings = data;
-
-    if(data) {
-      document.getElementById('rpt-year').value        = data.academic_year || new Date().getFullYear();
-      document.getElementById('rpt-level').value       = data.level || '';
-      document.getElementById('rpt-start-page').value  = data.start_page || 1;
-      document.getElementById('rpt-total-pages').value = data.total_pages_target || 120;
-      document.getElementById('rpt-start-date').value  = data.start_date || '';
-      document.getElementById('rpt-end-date').value    = data.end_date || '';
-      document.getElementById('rpt-status-chip').classList.remove('hidden');
-      document.getElementById('rpt-status-chip').style.display = 'flex';
-    }
-  } catch(err) { console.error('loadRPT:', err); }
-}
-
-async function loadHolidays() {
-  if(!APP.profile?.school_id) return;
-  try {
-    const year = new Date().getFullYear();
-    const { data } = await db.from('holidays')
-      .select('*')
-      .eq('school_id', APP.profile.school_id)
-      .gte('date', `${year}-01-01`)
-      .lte('date', `${year}-12-31`)
-      .order('date');
-    APP.holidays = data || [];
-    renderHolidaysList();
-  } catch(err) { console.error('loadHolidays:', err); }
-}
-
-async function loadDashboardData() {
-  await loadStudentsForHalaqah();
-  renderDashboard();
-  renderHalaqahTable();
-  renderDebtTable();
-  updateDebtBadge();
-}
-
-// ── NAVIGATION ────────────────────────────────────────────────
-function navigateTo(page, studentId=null) {
-  // Hide all pages
-  document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
-  // Update nav links
-  document.querySelectorAll('.sidebar-link').forEach(a => {
-    a.classList.toggle('active', a.dataset.page === page);
-  });
-
-  const pageMap = {
-    dashboard:      { id:'page-dashboard',       title:'Dashboard',              subtitle:'Gambaran keseluruhan halaqah anda' },
-    halaqah:        { id:'page-halaqah',          title:'Halaqah Saya',           subtitle:'Senarai lengkap pelajar & status' },
-    'quick-log':    { id:'page-quick-log',        title:'Rekod Bacaan',           subtitle:'Masukkan hafazan harian pelajar' },
-    students:       { id:'page-students',         title:'Senarai Pelajar',        subtitle:'Semua pelajar dalam sistem' },
-    debts:          { id:'page-debts',            title:'Hutang Halaman',         subtitle:'Pelajar dengan halaman tertunggak' },
-    analytics:      { id:'page-analytics',        title:'Analitik Kelas',         subtitle:'Carta dan trend prestasi' },
-    rpt:            { id:'page-rpt',              title:'Tetapan RPT',            subtitle:'Rancangan Pengajaran Tahunan' },
-    admin:          { id:'page-admin',            title:'Panel Pentadbir',        subtitle:'Urus halaqah dan pelajar' },
-    upload:         { id:'page-upload',           title:'Muat Naik CSV',          subtitle:'Import senarai pelajar secara pukal' },
-    holidays:       { id:'page-holidays',         title:'Kalendar Cuti',          subtitle:'Tetapkan cuti sekolah untuk RPT' },
-    'student-profile': { id:'page-student-profile', title:'Profil Pelajar',      subtitle:'Maklumat lengkap pelajar' }
-  };
-
-  const cfg = pageMap[page];
-  if(!cfg) return;
-
-  document.getElementById(cfg.id).classList.add('active');
-  document.getElementById('page-title').textContent    = cfg.title;
-  document.getElementById('page-subtitle').textContent = cfg.subtitle;
-
-  // Page-specific init
-  if(page === 'student-profile' && studentId) {
-    APP.currentStudentId = studentId;
-    loadStudentProfile(studentId);
-  }
-  if(page === 'analytics') renderAnalytics();
-  if(page === 'students')  renderStudentsList();
-  if(page === 'admin')     loadAdminData();
-}
-
-// ── DASHBOARD RENDER ─────────────────────────────────────────
-function renderDashboard() {
-  const s = APP.students;
-  if(!s.length) return;
-
-  const counts = { ahead:0, on_track:0, behind:0, debt:0 };
-  s.forEach(st => counts[st.status.status]++);
-  const total = s.length;
-
-  document.getElementById('kpi-ahead').textContent      = counts.ahead;
-  document.getElementById('kpi-ontrack').textContent    = counts.on_track;
-  document.getElementById('kpi-behind').textContent     = counts.behind;
-  document.getElementById('kpi-debt').textContent       = counts.debt;
-  document.getElementById('kpi-ahead-pct').textContent  = `${pct(counts.ahead,total)}% daripada ${total} pelajar`;
-  document.getElementById('kpi-ontrack-pct').textContent= `${pct(counts.on_track,total)}% daripada ${total} pelajar`;
-  document.getElementById('kpi-behind-pct').textContent = `${pct(counts.behind,total)}% daripada ${total} pelajar`;
-  document.getElementById('kpi-debt-pct').textContent   = `${pct(counts.debt,total)}% pelajar perlu perhatian`;
-
-  const khatamTotal = s.reduce((acc, st) => acc + (st.khatam_count||0), 0);
-  document.getElementById('khatam-total').textContent = khatamTotal;
-
-  // Health bar
-  ['ahead','on_track','behind','debt'].forEach(k => {
-    const el = document.getElementById(`hb-${k.replace('_','')==='ahead'?'ahead':k.replace('on_track','ontrack')}`);
-    const pctVal = pct(counts[k], total);
-    if(el) { el.style.width = pctVal+'%'; if(pctVal>5) el.textContent = pctVal+'%'; else el.textContent = ''; }
-  });
-  const hbOntrack = document.getElementById('hb-ontrack');
-  if(hbOntrack) { hbOntrack.style.width = pct(counts.on_track,total)+'%'; if(pct(counts.on_track,total)>5) hbOntrack.textContent = pct(counts.on_track,total)+'%'; }
-  const healthScore = Math.round(((counts.ahead+counts.on_track)/Math.max(total,1))*100);
-  document.getElementById('health-score-label').textContent = healthScore + '%';
-
-  // RPT info
-  if(APP.rptSettings) {
-    const ep = getExpectedPage(APP.rptSettings, new Date(), APP.holidays);
-    const dpEl = document.getElementById('rpt-dashboard-info');
-    dpEl.innerHTML = `
-      <div class="grid grid-cols-2 gap-3 text-sm">
-        <div class="bg-blue-50 rounded-xl p-3"><p class="text-blue-400 text-xs">Halaman RPT Hari Ini</p><p class="font-black text-blue-700 text-2xl">${ep}</p></div>
-        <div class="bg-emerald-50 rounded-xl p-3"><p class="text-emerald-400 text-xs">Tingkatan</p><p class="font-bold text-emerald-700 text-lg">${APP.rptSettings.level}</p></div>
-        <div class="bg-gray-50 rounded-xl p-3"><p class="text-gray-400 text-xs">Sasaran Jumlah</p><p class="font-bold text-gray-700">${APP.rptSettings.total_pages_target} ms</p></div>
-        <div class="bg-gray-50 rounded-xl p-3"><p class="text-gray-400 text-xs">Tempoh</p><p class="font-bold text-gray-700 text-xs">${APP.rptSettings.start_date} — ${APP.rptSettings.end_date}</p></div>
-      </div>
-    `;
-    document.getElementById('rpt-chip-text').textContent = `RPT: MS ${ep} hari ini`;
-  }
-
-  // Charts
-  renderStatusCharts(counts);
-  renderDebtHistogram();
-}
-
-function pct(v, total) {
-  return total === 0 ? 0 : Math.round((v/total)*100);
-}
-
-function renderStatusCharts(counts) {
-  const labels = ['Melebihi Sukatan','Mencapai Sukatan','Ketinggalan','Ada Hutang'];
-  const data   = [counts.ahead, counts.on_track, counts.behind, counts.debt];
-  const colors = ['#8B5CF6','#22C55E','#F97316','#EF4444'];
-
-  if(APP.charts.pie) APP.charts.pie.destroy();
-  if(APP.charts.bar) APP.charts.bar.destroy();
-
-  const pieCtx = document.getElementById('status-pie-chart')?.getContext('2d');
-  if(pieCtx) {
-    APP.charts.pie = new Chart(pieCtx, {
-      type: 'doughnut',
-      data: { labels, datasets: [{ data, backgroundColor: colors, borderWidth: 0, hoverOffset: 6 }] },
-      options: { plugins: { legend: { position:'bottom', labels:{ font:{size:11}, boxWidth:12, padding:12 } } }, cutout:'65%', responsive:true, maintainAspectRatio:false }
-    });
-  }
-
-  const barCtx = document.getElementById('status-bar-chart')?.getContext('2d');
-  if(barCtx) {
-    APP.charts.bar = new Chart(barCtx, {
-      type: 'bar',
-      data: { labels, datasets: [{ data, backgroundColor: colors, borderRadius: 8, borderSkipped: false }] },
-      options: {
-        plugins: { legend: { display:false } },
-        scales: { y: { beginAtZero:true, ticks:{ stepSize:1 }, grid:{ color:'#f3f4f6' } }, x: { grid:{ display:false } } },
-        responsive: true, maintainAspectRatio: false
-      }
-    });
-  }
-}
-
-function renderDebtHistogram() {
-  const withDebt = APP.students.filter(s => s.debtCount > 0)
-    .sort((a,b) => b.debtCount - a.debtCount)
-    .slice(0, 10);
-  if(!withDebt.length) return;
-
-  const ctx = document.getElementById('debt-histogram')?.getContext('2d');
-  if(!ctx) return;
-  if(APP.charts.debtHist) APP.charts.debtHist.destroy();
-  APP.charts.debtHist = new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels: withDebt.map(s => s.name.split(' ')[0]),
-      datasets: [{
-        label: 'Hutang (ms)',
-        data: withDebt.map(s => s.debtCount),
-        backgroundColor: '#EF4444',
-        borderRadius: 8,
-        borderSkipped: false
-      }]
-    },
-    options: {
-      plugins: { legend:{ display:false } },
-      scales: { y:{ beginAtZero:true, grid:{ color:'#f3f4f6' } }, x:{ grid:{ display:false } } },
-      responsive: true, maintainAspectRatio: false
-    }
-  });
-}
-
-// ── HALAQAH TABLE ────────────────────────────────────────────
-function renderHalaqahTable(filter='') {
-  const tbody = document.getElementById('student-table-body');
-  const filtered = APP.students.filter(s => {
-    const statusFilter = document.getElementById('filter-status')?.value;
-    const juzFilter    = document.getElementById('filter-juz')?.value;
-    const nameMatch    = !filter || s.name.toLowerCase().includes(filter.toLowerCase());
-    const statusMatch  = !statusFilter || s.status.status === statusFilter;
-    const juzMatch     = !juzFilter || s.current_juz === parseInt(juzFilter);
-    return nameMatch && statusMatch && juzMatch;
-  });
-
-  if(!filtered.length) {
-    tbody.innerHTML = `<tr><td colspan="8" class="text-center py-8 text-gray-400 text-sm">Tiada pelajar dijumpai</td></tr>`;
-    return;
-  }
-
-  tbody.innerHTML = filtered.map(s => {
-    const st = s.status;
-    const rowBg = st.status==='debt' ? 'bg-red-50' : st.status==='behind' ? 'bg-orange-50/40' : '';
-    return `
-    <tr class="border-b border-gray-50 hover:bg-gray-50 transition cursor-pointer ${rowBg}" onclick="navigateTo('student-profile','${s.id}')">
-      <td class="px-4 py-3 font-medium text-gray-800">
-        <div class="flex items-center gap-2">
-          <div class="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-700 text-xs flex items-center justify-center font-bold">${s.name[0]}</div>
-          ${s.name}
-        </div>
-      </td>
-      <td class="px-4 py-3 text-gray-600">Juz ${s.current_juz}</td>
-      <td class="px-4 py-3 font-bold text-gray-700">${s.current_page}</td>
-      <td class="px-4 py-3 text-blue-600 font-bold">${s.expectedPage || '—'}</td>
-      <td class="px-4 py-3"><span class="${st.cls}">${st.icon} ${st.label}</span></td>
-      <td class="px-4 py-3 ${s.debtCount>0 ? 'text-red-600 font-bold' : 'text-gray-400'}">${s.debtCount > 0 ? s.debtCount + ' ms' : '—'}</td>
-      <td class="px-4 py-3">${s.khatam_count > 0 ? `<span class="text-yellow-500 font-bold">🌟 ${s.khatam_count}</span>` : '—'}</td>
-      <td class="px-4 py-3">
-        <button onclick="event.stopPropagation(); loadStudentInLog('${s.id}')"
-          class="text-xs bg-emerald-100 text-emerald-700 px-2.5 py-1 rounded-lg hover:bg-emerald-200 transition font-semibold">
-          + Rekod
-        </button>
-      </td>
-    </tr>`;
-  }).join('');
-}
-
-function filterStudentTable(val) { renderHalaqahTable(val); }
-function applyFilters() { renderHalaqahTable(document.getElementById('student-search')?.value || ''); }
-function filterDebtStudents() {
-  document.getElementById('filter-status').value = 'debt';
-  applyFilters();
-}
-
-function exportTableCSV() {
-  const headers = ['Nama','Halaqah','Juzuk','MS Semasa','MS RPT','Status','Hutang','Khatam'];
-  const rows = APP.students.map(s => [
-    s.name, s.halaqah?.name||'', s.current_juz, s.current_page,
-    s.expectedPage||'', s.status.label, s.debtCount, s.khatam_count
-  ]);
-  const csv = [headers, ...rows].map(r => r.join(',')).join('\n');
-  downloadFile('hafazan_halaqah.csv', 'text/csv', csv);
-}
-
-function downloadFile(name, type, content) {
-  const blob = new Blob([content], { type });
-  const url  = URL.createObjectURL(blob);
-  const a    = document.createElement('a');
-  a.href = url; a.download = name; a.click();
-  URL.revokeObjectURL(url);
-}
-
-// ── QUICK LOG ─────────────────────────────────────────────────
-function loadStudentInLog(studentId) {
-  navigateTo('quick-log');
-  document.getElementById('log-student').value = studentId;
-  loadStudentForLog(studentId);
-}
-
-function loadStudentForLog(studentId) {
-  const student = APP.students.find(s => s.id === studentId);
-  if(!student) { document.getElementById('log-student-info').classList.add('hidden'); return; }
-
-  const info = document.getElementById('log-student-info');
-  info.classList.remove('hidden');
-  const { percent } = getJuzProgress(student.current_page);
-  const ep = student.expectedPage;
-
-  document.getElementById('info-juz').textContent    = `Juzuk ${student.current_juz} (${percent}%)`;
-  document.getElementById('info-page').textContent   = `MS ${student.current_page}`;
-  document.getElementById('info-rpt').textContent    = ep ? `MS ${ep}` : '—';
-  document.getElementById('info-status').innerHTML   = `<span class="${student.status.cls}">${student.status.icon} ${student.status.label}</span>`;
-  document.getElementById('info-debt').textContent   = student.debtCount > 0 ? student.debtCount + ' ms' : 'Tiada';
-
-  // Load recent logs
-  loadRecentLogs(studentId);
-}
-
-async function loadRecentLogs(studentId) {
-  try {
-    const { data } = await db.from('logs').select('*').eq('student_id', studentId).order('date', { ascending:false }).limit(5);
-    const el = document.getElementById('recent-logs');
-    if(!data?.length) { el.innerHTML = '<p class="text-gray-400 text-xs italic">Tiada rekod lagi.</p>'; return; }
-    el.innerHTML = data.map(log => `
-      <div class="flex justify-between items-center py-2 border-b border-gray-50">
-        <div>
-          <p class="font-medium text-gray-700 text-sm">${log.date} — MS ${log.pages_covered}</p>
-          ${log.notes ? `<p class="text-gray-400 text-xs">${log.notes}</p>` : ''}
-        </div>
-        <div class="flex items-center gap-2">
-          ${log.score ? `<span class="text-xs font-bold text-gray-600">${log.score}/100</span>` : ''}
-          ${log.grade ? `<span class="text-xs font-black px-2 py-0.5 rounded ${gradeColor(log.grade)}">${log.grade}</span>` : ''}
-        </div>
-      </div>
-    `).join('');
-  } catch(err) { console.error('loadRecentLogs:', err); }
-}
-
-function gradeColor(g) {
-  return { A:'bg-green-100 text-green-700', B:'bg-blue-100 text-blue-700', C:'bg-yellow-100 text-yellow-700', D:'bg-orange-100 text-orange-700', F:'bg-red-100 text-red-700' }[g] || '';
-}
-
-function previewLogResult(pageValue) {
-  const studentId = document.getElementById('log-student').value;
-  const student   = APP.students.find(s => s.id === studentId);
-  if(!student) return;
-
-  const newPage = parseInt(pageValue);
-  const ep      = student.expectedPage || 0;
-
-  // Debt preview
-  const debtDiv = document.getElementById('debt-preview');
-  if(newPage > 0 && ep > 0 && newPage < ep) {
-    const overdue = ep - newPage;
-    document.getElementById('debt-preview-text').textContent = `Pelajar ini ${overdue} halaman di belakang sasaran RPT (MS ${ep}). Rekod hutang akan dicipta.`;
-    debtDiv.classList.remove('hidden');
-  } else {
-    debtDiv.classList.add('hidden');
-  }
-
-  // Khatam preview
-  const prevJuz = getJuzFromPage(student.current_page);
-  const newJuz  = getJuzFromPage(newPage);
-  const khatamDiv = document.getElementById('khatam-preview');
-  if(newJuz > prevJuz && newPage >= JUZ_ENDS[prevJuz-1]) {
-    document.getElementById('khatam-preview-text').textContent = `Pelajar akan menamatkan Juzuk ${prevJuz}! 🎉`;
-    khatamDiv.classList.remove('hidden');
-  } else {
-    khatamDiv.classList.add('hidden');
-  }
-}
-
-async function handleQuickLog(e) {
-  e.preventDefault();
-  const btn = document.getElementById('log-submit-btn');
-  btn.disabled = true;
-  btn.innerHTML = '<div class="loading-spinner" style="width:1.2rem;height:1.2rem;border-width:2px"></div><span>Menyimpan...</span>';
-
-  try {
-    const studentId   = document.getElementById('log-student').value;
-    const date        = document.getElementById('log-date').value;
-    const page        = parseInt(document.getElementById('log-page').value);
-    const score       = parseInt(document.getElementById('log-score').value) || null;
-    const grade       = document.getElementById('log-grade').value || null;
-    const notes       = document.getElementById('log-notes').value;
-    const student     = APP.students.find(s => s.id === studentId);
-
-    if(!studentId || !page) throw new Error('Sila isi semua maklumat wajib.');
-
-    // Detect khatam
-    const prevJuz = getJuzFromPage(student.current_page);
-    const newJuz  = getJuzFromPage(page);
-    const isKhatam = newJuz > prevJuz && page >= JUZ_ENDS[prevJuz-1];
-
-    // Insert log
-    const { data: log, error: logErr } = await db.from('logs').insert({
-      student_id: studentId,
-      teacher_id: APP.user.id,
-      date, pages_covered: page, score, grade, notes,
-      is_khatam: isKhatam
-    }).select().single();
-    if(logErr) throw logErr;
-
-    // Update student page
-    const { error: stuErr } = await db.from('students')
-      .update({ current_page: page, current_juz: newJuz })
-      .eq('id', studentId);
-    if(stuErr) throw stuErr;
-
-    // Auto debt detection
-    const ep = student.expectedPage;
-    if(ep && page < ep) {
-      const overdue = ep - page;
-      await db.from('debts').insert({
-        student_id: studentId,
-        log_id: log.id,
-        pages_overdue: overdue,
-        debt_date: date
-      });
-    }
-
-    // Khatam record
-    if(isKhatam) {
-      await db.from('khatam_records').insert({ student_id: studentId, juz_number: prevJuz, date });
-      await db.from('students').update({ khatam_count: (student.khatam_count||0)+1 }).eq('id', studentId);
-      showToast(`🌟 Tahniah! ${student.name} telah khatam Juzuk ${prevJuz}!`, 'success', 5000);
-    }
-
-    showToast(`✅ Rekod bacaan ${student.name} (MS ${page}) disimpan!`, 'success');
-    document.getElementById('log-form').reset();
-    document.getElementById('log-date').value = new Date().toISOString().split('T')[0];
-    document.getElementById('log-student-info').classList.add('hidden');
-    document.getElementById('debt-preview').classList.add('hidden');
-    document.getElementById('khatam-preview').classList.add('hidden');
-
-    // Reload data
-    await loadDashboardData();
-  } catch(err) {
-    showToast('❌ Ralat: ' + err.message, 'error');
-  } finally {
-    btn.disabled = false;
-    btn.innerHTML = '<span>💾</span><span>Simpan Rekod</span>';
-  }
-}
-
-// ── STUDENT PROFILE ───────────────────────────────────────────
-async function loadStudentProfile(studentId) {
-  try {
-    const { data: student } = await db.from('students')
-      .select('*, halaqah(name,level), debts(*), khatam_records(*)')
-      .eq('id', studentId)
-      .single();
-
-    if(!student) return;
-
-    const ep = getExpectedPage(APP.rptSettings, new Date(), APP.holidays);
-    const pendingDebts = (student.debts||[]).filter(d => d.status==='pending');
-    const totalDebt    = pendingDebts.reduce((s,d) => s+d.pages_overdue, 0);
-    const status       = getStatus(student.current_page, ep, pendingDebts.length);
-    const { juz, percent } = getJuzProgress(student.current_page);
-    const completedJuz = getCompletedJuz(student.current_page);
-
-    // Header
-    const initials = student.name.split(' ').map(n=>n[0]).join('').substring(0,2).toUpperCase();
-    document.getElementById('profile-avatar').textContent    = initials;
-    document.getElementById('profile-name').textContent     = student.name;
-    document.getElementById('profile-halaqah').textContent  = `${student.halaqah?.name||'—'} — ${student.halaqah?.level||'—'}`;
-    document.getElementById('profile-juz').textContent      = juz;
-    document.getElementById('profile-page').textContent     = student.current_page;
-    document.getElementById('profile-rpt-page').textContent = ep || '—';
-    document.getElementById('profile-status').innerHTML     = `<span class="${status.cls}">${status.icon} ${status.label}</span>`;
-    document.getElementById('profile-debt').textContent     = totalDebt > 0 ? totalDebt + ' ms' : '0';
-    document.getElementById('profile-khatam').textContent   = `🌟 ${student.khatam_count||0}`;
-
-    // Juz score bar
-    document.getElementById('juz-score-pct').textContent  = percent + '%';
-    document.getElementById('juz-score-bar').style.width  = percent + '%';
-
-    // Juz Map
-    renderJuzMap(completedJuz, juz);
-
-    // Debt list
-    renderDebtList(pendingDebts);
-
-    // Load logs for charts
-    const { data: logs } = await db.from('logs')
-      .select('*')
-      .eq('student_id', studentId)
-      .order('date')
-      .limit(30);
-
-    renderProgressChart(logs || []);
-    renderKhatamChart(student.khatam_records || []);
-
-    // Store for certificate
-    APP._certStudent = student;
-
-  } catch(err) {
-    console.error('loadStudentProfile:', err);
-    showToast('❌ Ralat memuatkan profil: ' + err.message, 'error');
-  }
-}
-
-function renderJuzMap(completedJuz, currentJuz) {
-  const map = document.getElementById('juz-map');
-  map.innerHTML = '';
-  for(let i=1; i<=30; i++) {
-    const isDone    = completedJuz.includes(i);
-    const isCurrent = i === currentJuz && !isDone;
-    const div = document.createElement('div');
-    div.className = `juz-block rounded-xl p-2 text-center cursor-pointer border-2 transition-all ${
-      isDone    ? 'bg-emerald-500 border-emerald-400 text-white shadow-md' :
-      isCurrent ? 'bg-blue-400 border-blue-300 text-white shadow' :
-                  'bg-gray-100 border-gray-200 text-gray-500'
-    }`;
-    div.innerHTML = `<div class="text-xs font-bold">${i}</div><div class="text-xs mt-0.5">${isDone ? '✓' : isCurrent ? '●' : ''}</div>`;
-    div.title = `Juzuk ${i}${isDone ? ' (Khatam)' : isCurrent ? ' (Semasa)' : ''}`;
-    map.appendChild(div);
-  }
-}
-
-function renderDebtList(debts) {
-  const el = document.getElementById('profile-debt-list');
-  if(!debts?.length) { el.innerHTML = '<p class="text-gray-400 text-xs italic">Tiada hutang tertunggak. 🎉</p>'; return; }
-  el.innerHTML = debts.map(d => `
-    <div class="flex justify-between items-center py-2 border-b border-red-50">
-      <div>
-        <p class="font-medium text-red-700 text-sm">${d.pages_overdue} halaman tertunggak</p>
-        <p class="text-gray-400 text-xs">${d.debt_date}</p>
-      </div>
-      <button onclick="clearDebt('${d.id}')" class="text-xs bg-green-100 text-green-700 px-2.5 py-1 rounded-lg hover:bg-green-200 font-semibold">✓ Selesai</button>
-    </div>
-  `).join('');
-}
-
-async function clearDebt(debtId) {
-  try {
-    await db.from('debts').update({ status:'cleared', cleared_date: new Date().toISOString().split('T')[0] }).eq('id', debtId);
-    showToast('✅ Hutang diselesaikan!', 'success');
-    if(APP.currentStudentId) loadStudentProfile(APP.currentStudentId);
-    await loadDashboardData();
-  } catch(err) { showToast('❌ ' + err.message, 'error'); }
-}
-
-function renderProgressChart(logs) {
-  const ctx = document.getElementById('progress-chart')?.getContext('2d');
-  if(!ctx) return;
-  if(APP.charts.progress) APP.charts.progress.destroy();
-
-  APP.charts.progress = new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels: logs.map(l => l.date),
-      datasets: [
-        {
-          label: 'Halaman Semasa',
-          data: logs.map(l => l.pages_covered),
-          borderColor: '#10b981', backgroundColor: '#d1fae5', fill: true,
-          tension: 0.4, pointRadius: 4, pointBackgroundColor: '#10b981'
-        }
-      ]
-    },
-    options: {
-      plugins:{ legend:{ display:false } },
-      scales:{ y:{ beginAtZero:false, grid:{ color:'#f3f4f6' } }, x:{ grid:{ display:false }, ticks:{ maxRotation:45 } } },
-      responsive: true, maintainAspectRatio: false
-    }
-  });
-}
-
-function renderKhatamChart(khatamRecords) {
-  const ctx = document.getElementById('khatam-chart')?.getContext('2d');
-  if(!ctx) return;
-  if(APP.charts.khatam) APP.charts.khatam.destroy();
-
-  const sorted = [...khatamRecords].sort((a,b) => new Date(a.date)-new Date(b.date));
-  let cumulative = 0;
-  const chartData = sorted.map(r => { cumulative++; return { x: r.date, y: cumulative }; });
-
-  APP.charts.khatam = new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels: sorted.map(r => `Juz ${r.juz_number}`),
-      datasets: [{ label: 'Khatam', data: sorted.map((_,i)=>i+1), backgroundColor:'#f59e0b', borderRadius:8 }]
-    },
-    options: {
-      plugins: { legend:{ display:false } },
-      scales: { y:{ beginAtZero:true, ticks:{stepSize:1}, grid:{color:'#f3f4f6'} }, x:{ grid:{display:false} } },
-      responsive: true, maintainAspectRatio: false
-    }
-  });
-}
-
-// ── DEBT TABLE ───────────────────────────────────────────────
-async function renderDebtTable() {
-  const tbody = document.getElementById('debts-table-body');
-  try {
-    const studentIds = APP.students.map(s=>s.id);
-    if(!studentIds.length) { tbody.innerHTML = '<tr><td colspan="5" class="text-center py-8 text-gray-400">Tiada hutang.</td></tr>'; return; }
-
-    const { data } = await db.from('debts')
-      .select('*, students(name)')
-      .in('student_id', studentIds)
-      .eq('status', 'pending')
-      .order('debt_date', { ascending:false });
-
-    if(!data?.length) { tbody.innerHTML = '<tr><td colspan="5" class="text-center py-8 text-gray-400 text-sm">🎉 Tiada hutang tertunggak!</td></tr>'; return; }
-
-    tbody.innerHTML = data.map(d => `
-      <tr class="border-b border-gray-50 hover:bg-red-50/30">
-        <td class="px-4 py-3 font-medium text-gray-800">${d.students?.name||'—'}</td>
-        <td class="px-4 py-3 font-bold text-red-600">${d.pages_overdue} ms</td>
-        <td class="px-4 py-3 text-gray-500 text-sm">${d.debt_date}</td>
-        <td class="px-4 py-3"><span class="badge-debt">Tertunggak</span></td>
-        <td class="px-4 py-3">
-          <button onclick="clearDebt('${d.id}')" class="text-xs bg-green-100 text-green-700 px-2.5 py-1 rounded-lg hover:bg-green-200 font-semibold">✓ Selesai</button>
-        </td>
-      </tr>
-    `).join('');
-  } catch(err) { console.error('renderDebtTable:', err); }
-}
-
-function updateDebtBadge() {
-  const count = APP.students.filter(s => s.debtCount > 0).length;
-  const badge = document.getElementById('debt-badge');
-  if(count > 0) { badge.textContent = count; badge.classList.remove('hidden'); }
-  else badge.classList.add('hidden');
-}
-
-// ── RPT SETTINGS ─────────────────────────────────────────────
-function previewRPT() {
-  const startPage   = parseInt(document.getElementById('rpt-start-page').value)||1;
-  const totalPages  = parseInt(document.getElementById('rpt-total-pages').value)||0;
-  const startDate   = document.getElementById('rpt-start-date').value;
-  const endDate     = document.getElementById('rpt-end-date').value;
-  if(!startDate || !endDate || !totalPages) return;
-
-  const schoolDays = countSchoolDays(startDate, endDate, APP.holidays);
-  const dailyPages = schoolDays > 0 ? (totalPages / schoolDays).toFixed(2) : 0;
-  const todayTarget = getExpectedPage({ start_page: startPage, total_pages_target: totalPages, start_date: startDate, end_date: endDate }, new Date(), APP.holidays);
-
-  document.getElementById('prev-school-days').textContent = schoolDays + ' hari';
-  document.getElementById('prev-daily-pages').textContent = dailyPages + ' ms/hari';
-  document.getElementById('prev-today-target').textContent = 'MS ' + todayTarget;
-  document.getElementById('prev-end-page').textContent    = 'MS ' + (startPage + totalPages);
-  document.getElementById('rpt-preview').classList.remove('hidden');
-}
-
-async function saveRPTSettings(e) {
-  e.preventDefault();
-  try {
-    const settings = {
-      school_id:          APP.profile?.school_id || null,
-      level:              document.getElementById('rpt-level').value,
-      academic_year:      document.getElementById('rpt-year').value,
-      start_page:         parseInt(document.getElementById('rpt-start-page').value),
-      total_pages_target: parseInt(document.getElementById('rpt-total-pages').value),
-      start_date:         document.getElementById('rpt-start-date').value,
-      end_date:           document.getElementById('rpt-end-date').value
-    };
-    const { error } = await db.from('rpt_settings').upsert(settings, { onConflict:'school_id,level,academic_year' });
-    if(error) throw error;
-    APP.rptSettings = settings;
-    showToast('✅ Tetapan RPT disimpan!', 'success');
-    await loadDashboardData();
-  } catch(err) { showToast('❌ ' + err.message, 'error'); }
-}
-
-// ── ANALYTICS ────────────────────────────────────────────────
-async function renderAnalytics() {
-  const studentIds = APP.students.map(s=>s.id);
-  if(!studentIds.length) return;
-
-  try {
-    // Last 30 days logs
-    const today = new Date();
-    const from  = new Date(today); from.setDate(from.getDate()-29);
-    const { data: logs } = await db.from('logs')
-      .select('*')
-      .in('student_id', studentIds)
-      .gte('date', from.toISOString().split('T')[0])
-      .order('date');
-
-    // Class trend (avg pages per day)
-    const byDate = {};
-    (logs||[]).forEach(l => { byDate[l.date] = (byDate[l.date]||[]).concat(l.pages_covered); });
-    const dates = Object.keys(byDate).sort();
-    const avgPages = dates.map(d => Math.round(byDate[d].reduce((a,b)=>a+b,0)/byDate[d].length));
-
-    const trendCtx = document.getElementById('class-trend-chart')?.getContext('2d');
-    if(trendCtx) {
-      if(APP.charts.trend) APP.charts.trend.destroy();
-      APP.charts.trend = new Chart(trendCtx, {
-        type: 'line',
-        data: { labels: dates, datasets: [{ label:'Purata Halaman', data: avgPages, borderColor:'#10b981', backgroundColor:'#d1fae580', fill:true, tension:0.4 }] },
-        options: { plugins:{ legend:{ display:false } }, scales:{ y:{ beginAtZero:false }, x:{ ticks:{ maxRotation:45 } } }, responsive:true, maintainAspectRatio:false }
-      });
-    }
-
-    // Debt chart per student
-    const debtCtx = document.getElementById('class-debt-chart')?.getContext('2d');
-    if(debtCtx) {
-      const withDebt = APP.students.filter(s=>s.debtCount>0).sort((a,b)=>b.debtCount-a.debtCount).slice(0,10);
-      if(APP.charts.classDebt) APP.charts.classDebt.destroy();
-      APP.charts.classDebt = new Chart(debtCtx, {
-        type: 'horizontalBar' in Chart.defaults ? 'horizontalBar' : 'bar',
-        data: {
-          labels: withDebt.map(s=>s.name.split(' ')[0]),
-          datasets: [{ label:'Hutang (ms)', data: withDebt.map(s=>s.debtCount), backgroundColor:'#EF4444', borderRadius:8 }]
-        },
-        options: { indexAxis:'y', plugins:{ legend:{display:false} }, scales:{ x:{ beginAtZero:true } }, responsive:true, maintainAspectRatio:false }
-      });
-    }
-
-    // Score chart
-    const scoreCtx = document.getElementById('score-chart')?.getContext('2d');
-    if(scoreCtx && logs?.length) {
-      const byStudent = {};
-      logs.forEach(l => {
-        if(l.score) { byStudent[l.student_id] = byStudent[l.student_id]||[]; byStudent[l.student_id].push(l.score); }
-      });
-      const studentLabels = APP.students.filter(s=>byStudent[s.id]).map(s=>s.name.split(' ')[0]);
-      const avgScores = APP.students.filter(s=>byStudent[s.id]).map(s => Math.round(byStudent[s.id].reduce((a,b)=>a+b,0)/byStudent[s.id].length));
-      if(APP.charts.score) APP.charts.score.destroy();
-      APP.charts.score = new Chart(scoreCtx, {
-        type: 'bar',
-        data: { labels: studentLabels, datasets:[{ label:'Markah Purata', data: avgScores, backgroundColor:'#8B5CF6', borderRadius:8 }] },
-        options: { plugins:{ legend:{display:false} }, scales:{ y:{ beginAtZero:true, max:100 }, x:{ grid:{display:false} } }, responsive:true, maintainAspectRatio:false }
-      });
-    }
-  } catch(err) { console.error('Analytics:', err); }
-}
-
-// ── ADMIN ────────────────────────────────────────────────────
-async function loadAdminData() {
-  try {
-    const schoolId = APP.profile?.school_id;
-    const { data: halaqahs } = await db.from('halaqah').select('*, profiles(full_name)').eq('school_id', schoolId||'').order('name');
-    const list = document.getElementById('halaqah-list');
-    if(!halaqahs?.length) { list.innerHTML = '<p class="text-gray-400 text-xs">Tiada halaqah.</p>'; return; }
-    list.innerHTML = halaqahs.map(h => `
-      <div class="flex justify-between items-center py-2 border-b border-gray-50">
-        <div>
-          <p class="font-medium text-sm text-gray-700">${h.name}</p>
-          <p class="text-xs text-gray-400">${h.level} — ${h.profiles?.full_name||'Tiada guru'}</p>
-        </div>
-      </div>
-    `).join('');
-
-    // Also populate halaqah select
-    const sel = document.getElementById('new-student-halaqah');
-    sel.innerHTML = '<option value="">— Pilih Halaqah —</option>';
-    halaqahs.forEach(h => sel.innerHTML += `<option value="${h.id}">${h.name} (${h.level})</option>`);
-  } catch(err) { console.error('loadAdminData:', err); }
-}
-
-async function createHalaqah(e) {
-  e.preventDefault();
-  try {
-    const name  = document.getElementById('new-halaqah-name').value;
-    const level = document.getElementById('new-halaqah-level').value;
-    const { error } = await db.from('halaqah').insert({
-      name, level,
-      school_id:  APP.profile?.school_id,
-      teacher_id: APP.user.id,
-      academic_year: new Date().getFullYear().toString()
-    });
-    if(error) throw error;
-    showToast(`✅ Halaqah "${name}" dicipta!`, 'success');
-    document.getElementById('new-halaqah-name').value = '';
-    document.getElementById('new-halaqah-level').value = '';
-    loadAdminData();
-    loadTeacherHalaqah();
-  } catch(err) { showToast('❌ ' + err.message, 'error'); }
-}
-
-async function addStudent(e) {
-  e.preventDefault();
-  try {
-    const name      = document.getElementById('new-student-name').value;
-    const halaqahId = document.getElementById('new-student-halaqah').value;
-    const page      = parseInt(document.getElementById('new-student-page').value)||1;
-    const juz       = parseInt(document.getElementById('new-student-juz').value)||1;
-    const { error } = await db.from('students').insert({ name, halaqah_id: halaqahId, current_page: page, current_juz: juz, school_id: APP.profile?.school_id });
-    if(error) throw error;
-    showToast(`✅ Pelajar "${name}" ditambah!`, 'success');
-    e.target.reset();
-    await loadDashboardData();
-  } catch(err) { showToast('❌ ' + err.message, 'error'); }
-}
-
-// ── CSV UPLOAD ────────────────────────────────────────────────
-function parseStudentCSV(csvText) {
-  const lines  = csvText.trim().split('\n');
-  const header = lines[0].split(',').map(h => h.trim().toLowerCase().replace(/\s+/g,'_'));
-  return lines.slice(1).map(line => {
-    const cols = line.split(',').map(c=>c.trim().replace(/^"|"$/g,''));
-    const obj  = {};
-    header.forEach((h,i) => { obj[h] = cols[i]||''; });
-    return { name: obj['name']||obj['nama']||obj['full_name']||'', current_page: parseInt(obj['current_page']||obj['page']||'1',10), current_juz: parseInt(obj['current_juz']||obj['juz']||'1',10) };
-  }).filter(s => s.name);
-}
-
-function handleCSVDrop(e) {
-  e.preventDefault();
-  const file = e.dataTransfer?.files?.[0];
-  if(file) processCSVFile(file);
-}
-
-function handleCSVFile(e) {
-  const file = e.target.files?.[0];
-  if(file) processCSVFile(file);
-}
-
-function processCSVFile(file) {
-  const reader = new FileReader();
-  reader.onload = ev => {
-    APP.csvData = parseStudentCSV(ev.target.result);
-    document.getElementById('csv-row-count').textContent = APP.csvData.length;
-    const tbody = document.getElementById('csv-preview-body');
-    tbody.innerHTML = APP.csvData.map((s,i) => `
-      <tr class="${i%2===0?'bg-white':'bg-gray-50'}">
-        <td class="px-3 py-1.5 text-gray-400">${i+1}</td>
-        <td class="px-3 py-1.5 font-medium">${s.name}</td>
-        <td class="px-3 py-1.5">${s.current_page}</td>
-        <td class="px-3 py-1.5">${s.current_juz}</td>
-      </tr>
-    `).join('');
-    document.getElementById('csv-preview').classList.remove('hidden');
-    document.getElementById('csv-drop-zone').classList.add('border-emerald-400', 'bg-emerald-50');
-  };
-  reader.readAsText(file);
-}
-
-async function confirmCSVUpload() {
-  const halaqahId = document.getElementById('csv-halaqah-select').value;
-  if(!halaqahId) { showToast('⚠️ Sila pilih halaqah terlebih dahulu!', 'error'); return; }
-  if(!APP.csvData.length) return;
-
-  try {
-    const toInsert = APP.csvData.map(s => ({
-      ...s,
-      halaqah_id: halaqahId,
-      school_id: APP.profile?.school_id
-    }));
-    const { error } = await db.from('students').insert(toInsert);
-    if(error) throw error;
-    showToast(`✅ ${toInsert.length} pelajar berjaya diimport!`, 'success');
-    APP.csvData = [];
-    document.getElementById('csv-preview').classList.add('hidden');
-    document.getElementById('csv-file').value = '';
-    await loadDashboardData();
-  } catch(err) { showToast('❌ ' + err.message, 'error'); }
-}
-
-// ── HOLIDAYS ─────────────────────────────────────────────────
-async function addHoliday(e) {
-  e.preventDefault();
-  const date = document.getElementById('holiday-date').value;
-  const name = document.getElementById('holiday-name').value;
-  if(!APP.profile?.school_id) { showToast('⚠️ Tiada ID sekolah.', 'error'); return; }
-  try {
-    const { error } = await db.from('holidays').insert({ school_id: APP.profile.school_id, date, name });
-    if(error) throw error;
-    showToast(`✅ Cuti "${name}" ditambah!`, 'success');
-    e.target.reset();
-    await loadHolidays();
-  } catch(err) { showToast('❌ ' + err.message, 'error'); }
-}
-
-function renderHolidaysList() {
-  const el = document.getElementById('holidays-list');
-  if(!APP.holidays.length) { el.innerHTML = '<p class="text-gray-400 text-xs italic">Tiada cuti didaftarkan.</p>'; return; }
-  el.innerHTML = APP.holidays.map(h => `
-    <div class="flex justify-between items-center py-2 border-b border-gray-50">
-      <div>
-        <p class="font-medium text-gray-700 text-sm">${h.name}</p>
-        <p class="text-gray-400 text-xs">${new Date(h.date).toLocaleDateString('ms-MY', { weekday:'long', year:'numeric', month:'long', day:'numeric' })}</p>
-      </div>
-      <button onclick="removeHoliday('${h.id}')" class="text-xs text-red-500 hover:text-red-700 font-semibold">Hapus</button>
-    </div>
-  `).join('');
-}
-
-async function removeHoliday(id) {
-  try {
-    await db.from('holidays').delete().eq('id', id);
-    APP.holidays = APP.holidays.filter(h => h.id !== id);
-    renderHolidaysList();
-    showToast('✅ Cuti dipadam.', 'info');
-  } catch(err) { showToast('❌ ' + err.message, 'error'); }
-}
-
-// ── STUDENTS LIST ─────────────────────────────────────────────
-function renderStudentsList(filter='') {
-  const tbody = document.getElementById('students-list-body');
-  const filtered = APP.students.filter(s => !filter || s.name.toLowerCase().includes(filter.toLowerCase()));
-  if(!filtered.length) { tbody.innerHTML = '<tr><td colspan="6" class="text-center py-8 text-gray-400 text-sm">Tiada pelajar.</td></tr>'; return; }
-  tbody.innerHTML = filtered.map(s => `
-    <tr class="border-b border-gray-50 hover:bg-gray-50 cursor-pointer" onclick="navigateTo('student-profile','${s.id}')">
-      <td class="px-4 py-3 font-medium text-gray-800">${s.name}</td>
-      <td class="px-4 py-3 text-gray-500 text-sm">${s.halaqah?.name||'—'}</td>
-      <td class="px-4 py-3 text-gray-600">Juz ${s.current_juz}</td>
-      <td class="px-4 py-3 font-bold text-gray-700">${s.current_page}</td>
-      <td class="px-4 py-3"><span class="${s.status.cls}">${s.status.icon} ${s.status.label}</span></td>
-      <td class="px-4 py-3">
-        <button class="text-xs bg-emerald-100 text-emerald-700 px-2.5 py-1 rounded-lg hover:bg-emerald-200 font-semibold">Lihat →</button>
-      </td>
-    </tr>
-  `).join('');
-}
-function filterStudentsList(val) { renderStudentsList(val); }
-
-// ── CERTIFICATE GENERATION ────────────────────────────────────
-function generateCertificate() {
-  const student = APP._certStudent;
-  if(!student) { showToast('⚠️ Tiada data pelajar.', 'error'); return; }
-
-  try {
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
-
-    // Background gradient
-    doc.setFillColor(6, 95, 70);
-    doc.rect(0, 0, 297, 210, 'F');
-    doc.setFillColor(255, 255, 255);
-    doc.roundedRect(10, 10, 277, 190, 8, 8, 'F');
-    doc.setFillColor(6, 95, 70);
-    doc.roundedRect(15, 15, 267, 180, 6, 6, 'S');
-
-    // Decorative corners
-    doc.setLineWidth(2);
-    doc.setDrawColor(16, 185, 129);
-    doc.line(20, 20, 40, 20); doc.line(20, 20, 20, 40);
-    doc.line(277, 20, 257, 20); doc.line(277, 20, 277, 40);
-    doc.line(20, 190, 40, 190); doc.line(20, 190, 20, 170);
-    doc.line(277, 190, 257, 190); doc.line(277, 190, 277, 170);
-
-    // Title
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(28);
-    doc.setTextColor(6, 95, 70);
-    doc.text('SIJIL HAFAZAN', 148.5, 50, { align: 'center' });
-
-    doc.setFontSize(13);
-    doc.setTextColor(100, 100, 100);
-    doc.text('Sistem Pengurusan Hafazan MyHafazan MTSD', 148.5, 62, { align: 'center' });
-
-    // Main content
-    doc.setFontSize(14);
-    doc.setTextColor(80, 80, 80);
-    doc.text('Dengan sukacitanya dianugerahkan sijil ini kepada:', 148.5, 82, { align: 'center' });
-
-    doc.setFontSize(26);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(6, 95, 70);
-    doc.text(student.name.toUpperCase(), 148.5, 100, { align: 'center' });
-
-    doc.setFontSize(13);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(80, 80, 80);
-    doc.text(`Halaqah: ${student.halaqah?.name||'—'} | ${student.halaqah?.level||'—'}`, 148.5, 115, { align: 'center' });
-
-    doc.setFontSize(14);
-    doc.setTextColor(6, 95, 70);
-    doc.setFont('helvetica', 'bold');
-    doc.text(`Telah Berjaya Menghafaz ${student.khatam_count||1} Juzuk Al-Quran`, 148.5, 132, { align: 'center' });
-
-    // Progress info
-    doc.setFontSize(11);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(100, 100, 100);
-    doc.text(`Muka Surat Terkini: ${student.current_page}/604  |  Juzuk: ${student.current_juz}/30`, 148.5, 148, { align: 'center' });
-
-    // Date
-    const today = new Date().toLocaleDateString('ms-MY', { year:'numeric', month:'long', day:'numeric' });
-    doc.setFontSize(11);
-    doc.setTextColor(120, 120, 120);
-    doc.text(`Tarikh: ${today}`, 148.5, 165, { align: 'center' });
-
-    // Star emoji area
-    doc.setFontSize(24);
-    doc.setTextColor(245, 158, 11);
-    doc.text('★  ★  ★', 148.5, 180, { align: 'center' });
-
-    // Footer
-    doc.setFontSize(9);
-    doc.setTextColor(180, 180, 180);
-    doc.text('MyHafazan MTSD v2.0 — Sistem Pengurusan Hafazan Al-Quran', 148.5, 194, { align: 'center' });
-
-    doc.save(`Sijil_Hafazan_${student.name.replace(/\s/g,'_')}.pdf`);
-    showToast('🎓 Sijil PDF berjaya dijana!', 'success');
-  } catch(err) {
-    showToast('❌ Ralat jana sijil: ' + err.message, 'error');
-  }
-}
-
-// ── REALTIME ─────────────────────────────────────────────────
-function setupRealtime() {
-  if(!APP.currentHalaqah) return;
-  if(APP.realtimeChannel) db.removeChannel(APP.realtimeChannel);
-  APP.realtimeChannel = db
-    .channel(`halaqah:${APP.currentHalaqah.id}`)
-    .on('postgres_changes', { event:'*', schema:'public', table:'students', filter:`halaqah_id=eq.${APP.currentHalaqah.id}` }, async () => {
-      await loadDashboardData();
-      showToast('🔄 Data pelajar dikemas kini.', 'info', 2000);
-    })
-    .on('postgres_changes', { event:'INSERT', schema:'public', table:'logs' }, async () => {
-      await loadDashboardData();
-    })
-    .subscribe();
-}
-
-// ── TOAST ─────────────────────────────────────────────────────
-function showToast(message, type='info', duration=3500) {
-  const container = document.getElementById('toast-container');
-  const colors    = { success:'bg-emerald-600', error:'bg-red-500', info:'bg-blue-500', warning:'bg-orange-500' };
-  const id   = 'toast-' + Date.now();
-  const div  = document.createElement('div');
-  div.id     = id;
-  div.className = `${colors[type]||colors.info} text-white px-4 py-3 rounded-xl shadow-xl text-sm font-medium flex items-center gap-2 transition-all duration-300 transform translate-y-4 opacity-0`;
-  div.innerHTML = `<span>${message}</span><button onclick="document.getElementById('${id}').remove()" class="ml-2 text-white/70 hover:text-white text-xs">✕</button>`;
-  container.appendChild(div);
-  requestAnimationFrame(() => { div.classList.remove('translate-y-4','opacity-0'); });
-  setTimeout(() => { div.classList.add('opacity-0'); setTimeout(() => div.remove(), 300); }, duration);
-}
-
-// ── MODAL ────────────────────────────────────────────────────
-function showModal(title, text, onConfirm) {
-  document.getElementById('modal-title').textContent = title;
-  document.getElementById('modal-text').textContent  = text;
-  const modal = document.getElementById('confirm-modal');
-  modal.style.display = 'flex';
-  document.getElementById('modal-confirm-btn').onclick = () => { closeModal(); onConfirm(); };
-}
-function closeModal() {
-  document.getElementById('confirm-modal').style.display = 'none';
-}
-
-// ── INIT ──────────────────────────────────────────────────────
-// Check existing session on load
-(async () => {
-  const { data: { session } } = await db.auth.getSession();
-  if(session?.user) {
-    APP.user = session.user;
-    document.getElementById('auth-screen').classList.add('hidden');
-    document.getElementById('app').classList.remove('hidden');
-    await initApp();
-  }
-})();
+  document.addEventListener('DOMContentLoaded', initLoginPage);
 </script>
 </body>
 </html>

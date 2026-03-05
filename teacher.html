@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>MyHafazan MTSD – Murabbi</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --purple: #6B21A8; --purple-light: #7C3AED; --purple-glow: #A78BFA; --purple-pale: #F3E8FF;
+  --green: #16A34A; --green-pale: #DCFCE7; --gold: #D97706; --red: #DC2626;
+  --slate-50: #F8FAFC; --slate-100: #F1F5F9; --slate-200: #E2E8F0;
+  --slate-400: #94A3B8; --slate-500: #64748B; --slate-600: #475569;
+  --slate-700: #334155; --slate-800: #1E293B; --slate-900: #0F172A;
+}
+body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--slate-100); color: var(--slate-800); min-height: 100vh; }
+
+/* TOPBAR */
+.topbar {
+  background: var(--slate-900); color: white;
+  padding: 0 20px; height: 60px;
+  display: flex; align-items: center; justify-content: space-between;
+  position: sticky; top: 0; z-index: 100;
+}
+.topbar-brand { display: flex; align-items: center; gap: 10px; }
+.topbar-logo { width: 36px; height: 36px; background: linear-gradient(135deg, var(--purple), var(--purple-light)); border-radius: 8px; display: flex; align-items: center; justify-content: center; }
+.topbar-title { font-family: 'Amiri', serif; font-size: 18px; }
+.topbar-title span { color: var(--purple-glow); }
+.topbar-right { display: flex; align-items: center; gap: 12px; }
+.user-info { text-align: right; }
+.user-name { font-size: 13px; font-weight: 600; }
+.user-role { font-size: 11px; color: rgba(255,255,255,0.45); }
+.btn-icon { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12); color: rgba(255,255,255,0.7); border-radius: 8px; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 14px; transition: all 0.15s; }
+.btn-icon:hover { background: rgba(255,255,255,0.15); color: white; }
+
+/* PAGE */
+.page { max-width: 900px; margin: 0 auto; padding: 20px 16px 100px; }
+
+/* HALAQAH HEADER */
+.halaqah-header {
+  background: linear-gradient(135deg, var(--purple), var(--purple-light));
+  border-radius: 16px; padding: 20px 24px; color: white; margin-bottom: 20px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.hh-left h2 { font-size: 22px; font-weight: 800; }
+.hh-left p { font-size: 12px; opacity: 0.7; margin-top: 2px; }
+.hh-stats { display: flex; gap: 20px; }
+.hh-stat { text-align: center; }
+.hh-stat .val { font-size: 24px; font-weight: 800; }
+.hh-stat .lbl { font-size: 11px; opacity: 0.65; }
+
+/* TARGET BADGE */
+.target-badge {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: white; color: var(--purple);
+  border: 1.5px solid rgba(107,33,168,0.2);
+  border-radius: 20px; padding: 6px 14px; font-size: 13px; font-weight: 600;
+  margin-bottom: 16px;
+}
+.target-badge i { color: var(--purple-light); }
+
+/* SEARCH */
+.search-bar { position: relative; margin-bottom: 16px; }
+.search-bar i { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--slate-400); font-size: 14px; }
+.search-bar input { width: 100%; padding: 11px 14px 11px 40px; border: 1.5px solid var(--slate-200); border-radius: 12px; background: white; font-size: 14px; font-family: 'Plus Jakarta Sans', sans-serif; color: var(--slate-800); outline: none; transition: all 0.2s; }
+.search-bar input:focus { border-color: var(--purple-light); box-shadow: 0 0 0 3px rgba(124,58,237,0.08); }
+
+/* STUDENT CARDS */
+.student-card {
+  display: flex; align-items: center; gap: 14px;
+  background: white; border-radius: 14px; padding: 14px 16px;
+  border: 1.5px solid var(--slate-200); margin-bottom: 10px;
+  cursor: pointer; transition: all 0.2s;
+}
+.student-card:hover { border-color: var(--purple-light); box-shadow: 0 4px 16px rgba(107,33,168,0.1); transform: translateY(-1px); }
+.sc-avatar { width: 48px; height: 48px; border-radius: 50%; background: linear-gradient(135deg, var(--purple), var(--purple-light)); color: white; font-weight: 700; font-size: 16px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; overflow: hidden; }
+.sc-info { flex: 1; min-width: 0; }
+.sc-name { font-size: 15px; font-weight: 700; color: var(--slate-800); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sc-meta { font-size: 12px; color: var(--slate-500); display: flex; gap: 12px; margin-top: 3px; }
+.sc-meta span { display: flex; align-items: center; gap: 4px; }
+.sc-progress-bar { height: 4px; background: var(--slate-100); border-radius: 4px; margin-top: 8px; overflow: hidden; }
+.sc-progress-fill { height: 100%; background: linear-gradient(90deg, var(--purple), var(--purple-light)); border-radius: 4px; transition: width 0.3s; }
+.sc-right { text-align: right; flex-shrink: 0; }
+.sc-hutang { font-size: 22px; font-weight: 800; line-height: 1; }
+.sc-status { font-size: 11px; font-weight: 600; margin-top: 2px; display: flex; align-items: center; gap: 3px; justify-content: flex-end; }
+.sc-log-btn { margin-top: 6px; font-size: 11px; font-weight: 600; color: var(--purple); background: var(--purple-pale); border-radius: 6px; padding: 3px 8px; display: inline-flex; align-items: center; gap: 4px; }
+
+.status-green { color: var(--green); }
+.status-orange { color: var(--gold); }
+.status-red { color: var(--red); }
+.status-gray { color: var(--slate-400); }
+
+.empty-state { text-align: center; padding: 48px 20px; color: var(--slate-400); background: white; border-radius: 14px; border: 1.5px solid var(--slate-200); }
+.empty-state i { font-size: 40px; margin-bottom: 12px; display: block; }
+.empty-state p { font-size: 14px; line-height: 1.6; }
+
+/* MODAL */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+  z-index: 1000; align-items: flex-end; justify-content: center;
+  backdrop-filter: blur(4px);
+}
+.modal-overlay.hidden { display: none; }
+.modal-overlay.flex { display: flex; }
+.modal {
+  background: white; border-radius: 24px 24px 0 0; padding: 28px 24px;
+  width: 100%; max-width: 520px; max-height: 92vh; overflow-y: auto;
+  animation: slideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+
+.modal-handle { width: 36px; height: 4px; background: var(--slate-200); border-radius: 4px; margin: 0 auto 20px; }
+
+.modal-student-header { display: flex; align-items: center; gap: 14px; margin-bottom: 20px; }
+.modal-avatar { width: 52px; height: 52px; border-radius: 50%; background: linear-gradient(135deg, var(--purple), var(--purple-light)); color: white; font-size: 18px; font-weight: 700; display: flex; align-items: center; justify-content: center; overflow: hidden; flex-shrink: 0; }
+.modal-student-name { font-size: 18px; font-weight: 800; color: var(--slate-800); }
+.modal-student-page { font-size: 13px; color: var(--slate-500); margin-top: 2px; }
+
+.section-label { font-size: 11px; font-weight: 700; color: var(--slate-400); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+
+.log-type-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 18px; }
+.type-btn { padding: 10px 6px; border: 2px solid var(--slate-200); border-radius: 10px; cursor: pointer; text-align: center; font-size: 12px; font-weight: 600; font-family: 'Plus Jakarta Sans', sans-serif; background: white; color: var(--slate-600); transition: all 0.15s; }
+.type-btn:hover { border-color: var(--purple-light); color: var(--purple); }
+.type-btn.selected { border-color: var(--purple); background: var(--purple-pale); color: var(--purple); }
+.type-btn i { display: block; font-size: 18px; margin-bottom: 4px; }
+
+.field { margin-bottom: 14px; }
+.field label { display: block; font-size: 12px; font-weight: 600; color: var(--slate-600); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.3px; display: flex; align-items: center; gap: 6px; }
+.field input, .field select, .field textarea { width: 100%; border: 1.5px solid var(--slate-200); border-radius: 10px; padding: 10px 12px; font-size: 14px; font-family: 'Plus Jakarta Sans', sans-serif; color: var(--slate-800); background: var(--slate-50); outline: none; transition: all 0.2s; resize: none; }
+.field input:focus, .field select:focus, .field textarea:focus { border-color: var(--purple-light); background: white; box-shadow: 0 0 0 3px rgba(124,58,237,0.08); }
+
+.btn-primary { width: 100%; background: linear-gradient(135deg, var(--purple), var(--purple-light)); color: white; border: none; border-radius: 12px; padding: 14px; font-size: 15px; font-weight: 700; font-family: 'Plus Jakarta Sans', sans-serif; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s; box-shadow: 0 4px 12px rgba(107,33,168,0.3); margin-top: 8px; }
+.btn-primary:hover { box-shadow: 0 6px 20px rgba(107,33,168,0.4); transform: translateY(-1px); }
+.btn-primary:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+.divider-line { height: 1px; background: var(--slate-100); margin: 16px 0; }
+.modal-error { background: #FEE2E2; border: 1px solid rgba(220,38,38,0.2); border-radius: 10px; padding: 10px 14px; color: var(--red); font-size: 13px; margin-bottom: 12px; }
+.hidden { display: none !important; }
+
+/* TOAST */
+.toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px); z-index: 9999; padding: 14px 24px; border-radius: 12px; font-size: 14px; font-weight: 600; opacity: 0; transition: all 0.3s; white-space: nowrap; box-shadow: 0 8px 24px rgba(0,0,0,0.15); }
+.toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+.toast-success { background: var(--green); color: white; }
+.toast-error { background: var(--red); color: white; }
+
+@media (max-width: 640px) {
+  .hh-stats { display: none; }
+  .halaqah-header { flex-direction: column; align-items: flex-start; gap: 8px; }
+  .modal { border-radius: 20px 20px 0 0; }
+}
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="topbar-brand">
+    <div class="topbar-logo"><i class="fas fa-book-quran" style="color:white;font-size:16px;"></i></div>
+    <span class="topbar-title">My<span>Hafazan</span></span>
+  </div>
+  <div class="topbar-right">
+    <div class="user-info">
+      <div class="user-name" id="navUserName">Murabbi</div>
+      <div class="user-role" id="navUserRole">Murabbi</div>
+    </div>
+    <button class="btn-icon" id="logoutBtn" title="Log Keluar"><i class="fas fa-right-from-bracket"></i></button>
+  </div>
+</div>
+
+<!-- PAGE -->
+<div class="page">
+
+  <div style="margin-bottom:12px;font-size:13px;color:var(--slate-500);" id="topbarDate"></div>
+
+  <!-- HALAQAH HEADER -->
+  <div class="halaqah-header">
+    <div class="hh-left">
+      <h2 id="halaqahName">Memuat...</h2>
+      <p id="halaqahId"></p>
+    </div>
+    <div class="hh-stats">
+      <div class="hh-stat">
+        <div class="val" id="studentCount">–</div>
+        <div class="lbl">Pelajar</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TARGET BADGE -->
+  <div class="target-badge" id="todayTargetBadge">
+    <i class="fas fa-spinner fa-spin"></i> Memuat sasaran...
+  </div>
+
+  <!-- SEARCH -->
+  <div class="search-bar">
+    <i class="fas fa-magnifying-glass"></i>
+    <input type="text" id="searchInput" placeholder="Cari nama pelajar..." />
+  </div>
+
+  <!-- STUDENT LIST -->
+  <div id="studentList">
+    <div class="empty-state"><i class="fas fa-spinner fa-spin"></i><p>Memuat senarai pelajar...</p></div>
+  </div>
+</div>
+
+<!-- LOG MODAL -->
+<div class="modal-overlay hidden" id="logModal">
+  <div class="modal" id="modalContent">
+    <div class="modal-handle"></div>
+
+    <div class="modal-student-header">
+      <div class="modal-avatar" id="modalAvatar"><span>?</span></div>
+      <div style="flex:1;">
+        <div class="modal-student-name" id="modalStudentName">Pelajar</div>
+        <div class="modal-student-page" id="modalStudentPage"></div>
+      </div>
+      <button style="background:none;border:none;font-size:20px;color:var(--slate-400);cursor:pointer;" id="closeModalBtn">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+
+    <div id="modalError" class="modal-error hidden"></div>
+
+    <!-- LOG TYPE -->
+    <div class="section-label">Jenis Tasmik</div>
+    <div class="log-type-grid">
+      <button class="type-btn selected" data-type="jadid" onclick="selectType(this)">
+        <i class="fas fa-star"></i> Hifz Jadid
+      </button>
+      <button class="type-btn" data-type="murajaah_u" onclick="selectType(this)">
+        <i class="fas fa-rotate"></i> Murajaah Umum
+      </button>
+      <button class="type-btn" data-type="murajaah_q" onclick="selectType(this)">
+        <i class="fas fa-shield-halved"></i> Murajaah Khas
+      </button>
+    </div>
+    <input type="hidden" id="logType" value="jadid" />
+
+    <!-- PAGE NUMBER -->
+    <div class="field">
+      <label><i class="fas fa-book-open"></i> Muka Surat Yang Dicapai</label>
+      <input type="number" id="logPage" min="1" max="604" placeholder="1 – 604" />
+    </div>
+
+    <!-- QUALITY -->
+    <div class="field">
+      <label><i class="fas fa-star"></i> Kualiti Hafazan</label>
+      <select id="logQuality">
+        <option value="5">⭐⭐⭐⭐⭐ Cemerlang</option>
+        <option value="4">⭐⭐⭐⭐ Baik</option>
+        <option value="3">⭐⭐⭐ Memuaskan</option>
+        <option value="2">⭐⭐ Lemah</option>
+        <option value="1">⭐ Perlu Ulangan</option>
+      </select>
+    </div>
+
+    <!-- NOTES -->
+    <div class="field">
+      <label><i class="fas fa-note-sticky"></i> Catatan (pilihan)</label>
+      <textarea id="logNotes" rows="2" placeholder="Catatan Murabbi..."></textarea>
+    </div>
+
+    <button class="btn-primary" id="submitLogBtn">
+      <i class="fas fa-floppy-disk"></i> Simpan Log Tasmik
+    </button>
+
+    <!-- RECENT LOGS -->
+    <div class="divider-line"></div>
+    <div class="section-label">Log Terkini Pelajar</div>
+    <div id="studentLogs"></div>
+  </div>
+  <div id="modalBackdrop" style="position:absolute;inset:0;z-index:-1;"></div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="auth.js"></script>
+<script src="teacher.js"></script>
+<script>
+function selectType(btn) {
+  document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  document.getElementById('logType').value = btn.dataset.type;
+}
+</script>
+</body>
+</html>

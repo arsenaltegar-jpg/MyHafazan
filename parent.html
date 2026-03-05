@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>MyHafazan MTSD – Kemajuan Anak</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --purple: #6B21A8; --purple-light: #7C3AED; --purple-glow: #A78BFA; --purple-pale: #F3E8FF;
+  --purple-dark: #4C1D95;
+  --green: #16A34A; --green-light: #22C55E; --green-pale: #DCFCE7;
+  --gold: #D97706; --gold-pale: #FEF3C7; --red: #DC2626; --red-pale: #FEE2E2;
+  --slate-50: #F8FAFC; --slate-100: #F1F5F9; --slate-200: #E2E8F0;
+  --slate-400: #94A3B8; --slate-500: #64748B; --slate-600: #475569;
+  --slate-700: #334155; --slate-800: #1E293B; --slate-900: #0F172A;
+}
+body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--slate-100); min-height: 100vh; }
+
+/* TOPBAR */
+.topbar {
+  background: var(--slate-900); padding: 0 20px; height: 60px;
+  display: flex; align-items: center; justify-content: space-between;
+  position: sticky; top: 0; z-index: 100;
+}
+.topbar-brand { display: flex; align-items: center; gap: 10px; }
+.topbar-logo { width: 36px; height: 36px; background: linear-gradient(135deg, var(--purple), var(--purple-light)); border-radius: 8px; display: flex; align-items: center; justify-content: center; }
+.brand-text { font-family: 'Amiri', serif; font-size: 18px; color: white; }
+.brand-text span { color: var(--purple-glow); }
+.topbar-right { display: flex; align-items: center; gap: 12px; }
+.user-info { text-align: right; }
+.user-name { font-size: 13px; font-weight: 600; color: white; }
+.user-role { font-size: 11px; color: rgba(255,255,255,0.4); }
+.btn-icon { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12); color: rgba(255,255,255,0.7); border-radius: 8px; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 14px; transition: all 0.15s; }
+.btn-icon:hover { background: rgba(255,255,255,0.15); color: white; }
+
+/* HERO BANNER */
+.hero { background: linear-gradient(135deg, var(--purple-dark), var(--purple), var(--purple-light)); padding: 28px 20px; text-align: center; color: white; }
+.hero-title { font-family: 'Amiri', serif; font-size: 26px; margin-bottom: 4px; }
+.hero-sub { font-size: 13px; opacity: 0.7; }
+.hero-date { font-size: 12px; opacity: 0.5; margin-top: 6px; }
+
+/* PAGE */
+.page { max-width: 640px; margin: 0 auto; padding: 20px 16px 80px; }
+
+/* CHILD CARD */
+.child-card {
+  background: white; border-radius: 20px; overflow: hidden;
+  border: 1px solid var(--slate-200); margin-bottom: 20px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+}
+
+/* CARD HEADER */
+.cc-header {
+  display: flex; align-items: flex-start; gap: 14px;
+  padding: 20px;
+}
+.status-green-bg { background: linear-gradient(135deg, #14532D, #16A34A); }
+.status-orange-bg { background: linear-gradient(135deg, #92400E, #D97706); }
+.status-red-bg { background: linear-gradient(135deg, #7F1D1D, #DC2626); }
+.status-gray-bg { background: linear-gradient(135deg, var(--slate-700), var(--slate-600)); }
+
+.cc-avatar {
+  width: 64px; height: 64px; border-radius: 50%;
+  background: rgba(255,255,255,0.2); border: 3px solid rgba(255,255,255,0.4);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px; font-weight: 800; color: white;
+  overflow: hidden; flex-shrink: 0; position: relative;
+}
+.cc-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.cc-status-dot {
+  position: absolute; bottom: 2px; right: 2px;
+  width: 14px; height: 14px; border-radius: 50%; border: 2px solid white;
+}
+.status-green-dot { background: #4ADE80; }
+.status-orange-dot { background: #FCD34D; }
+.status-red-dot { background: #F87171; }
+.status-gray-dot { background: #94A3B8; }
+
+.cc-header-info { flex: 1; }
+.cc-name { font-size: 18px; font-weight: 800; color: white; }
+.cc-halaqah, .cc-teacher { font-size: 12px; opacity: 0.75; margin-top: 3px; display: flex; align-items: center; gap: 6px; color: white; }
+.cc-header-right { text-align: right; flex-shrink: 0; }
+.cc-juz-badge {
+  background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3);
+  border-radius: 20px; padding: 4px 12px; font-size: 13px; font-weight: 700;
+  color: white; white-space: nowrap;
+}
+
+/* HUTANG SECTION */
+.cc-hutang-section { padding: 24px 20px 16px; text-align: center; border-bottom: 1px solid var(--slate-100); }
+.cc-hutang-label { font-size: 11px; font-weight: 700; color: var(--slate-400); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 8px; }
+.cc-hutang-number { font-size: 64px; font-weight: 900; line-height: 1; font-variant-numeric: tabular-nums; }
+.cc-hutang-number.status-green { color: var(--green); }
+.cc-hutang-number.status-orange { color: var(--gold); }
+.cc-hutang-number.status-red { color: var(--red); }
+.cc-hutang-number.status-gray { color: var(--slate-400); }
+.cc-status-text { font-size: 14px; font-weight: 600; margin-top: 8px; display: flex; align-items: center; justify-content: center; gap: 6px; }
+.cc-status-text.status-green { color: var(--green); }
+.cc-status-text.status-orange { color: var(--gold); }
+.cc-status-text.status-red { color: var(--red); }
+.cc-status-text.status-gray { color: var(--slate-400); }
+
+/* STATS ROW */
+.cc-stats { display: flex; align-items: center; padding: 16px 20px; border-bottom: 1px solid var(--slate-100); }
+.cc-stat { flex: 1; text-align: center; }
+.cc-stat-label { font-size: 11px; font-weight: 600; color: var(--slate-400); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+.cc-stat-value { font-size: 22px; font-weight: 800; color: var(--slate-800); }
+.cc-stat-divider { width: 1px; height: 40px; background: var(--slate-100); }
+
+/* PROGRESS */
+.cc-progress-section { padding: 16px 20px 0; }
+.cc-progress-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.cc-progress-label { font-size: 13px; font-weight: 600; color: var(--slate-600); display: flex; align-items: center; gap: 6px; }
+.cc-progress-pct { font-size: 13px; font-weight: 700; color: var(--slate-600); }
+.cc-progress-track { height: 10px; background: var(--slate-100); border-radius: 10px; overflow: hidden; }
+.cc-progress-fill { height: 100%; border-radius: 10px; transition: width 0.6s cubic-bezier(0.34,1.56,0.64,1); }
+.status-green-fill { background: linear-gradient(90deg, #14532D, var(--green-light)); }
+.status-orange-fill { background: linear-gradient(90deg, #92400E, #FCD34D); }
+.status-red-fill { background: linear-gradient(90deg, #7F1D1D, #F87171); }
+.status-gray-fill { background: var(--slate-300); }
+.purple-fill { background: linear-gradient(90deg, var(--purple), var(--purple-glow)); }
+.cc-progress-meta { font-size: 11px; color: var(--slate-400); margin-top: 4px; margin-bottom: 12px; }
+
+/* ANNOUNCEMENT */
+.announcement-card {
+  margin-bottom: 16px; background: white; border-radius: 14px;
+  border: 1px solid var(--slate-200); overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+.announcement-header {
+  background: linear-gradient(135deg, var(--purple), var(--purple-light));
+  padding: 12px 16px; display: flex; align-items: center; gap: 8px;
+}
+.announcement-header span { font-size: 13px; font-weight: 700; color: white; }
+.announcement-item { padding: 14px 16px; border-bottom: 1px solid var(--slate-100); }
+.announcement-item:last-child { border-bottom: none; }
+.announcement-title { font-size: 14px; font-weight: 700; color: var(--slate-800); margin-bottom: 4px; }
+.announcement-body { font-size: 13px; color: var(--slate-600); line-height: 1.5; }
+.announcement-date { font-size: 11px; color: var(--slate-400); margin-top: 6px; }
+
+/* LOGS SECTION */
+.cc-logs-section { padding: 16px 20px 20px; }
+.cc-logs-title { font-size: 13px; font-weight: 700; color: var(--slate-600); margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
+.cc-logs-list { display: flex; flex-direction: column; gap: 8px; }
+.log-item { display: flex; align-items: center; gap: 10px; padding: 10px; background: var(--slate-50); border-radius: 10px; border: 1px solid var(--slate-100); }
+.log-type-badge { font-size: 11px; font-weight: 700; border-radius: 6px; padding: 3px 8px; white-space: nowrap; }
+.log-info { flex: 1; display: flex; align-items: center; gap: 10px; }
+.log-page { font-size: 13px; font-weight: 700; color: var(--slate-700); }
+.log-date { font-size: 12px; color: var(--slate-400); }
+.log-stars { font-size: 12px; }
+.log-loading { text-align: center; padding: 16px; color: var(--slate-400); font-size: 13px; }
+.no-logs { text-align: center; color: var(--slate-400); font-size: 13px; padding: 12px; }
+
+/* EMPTY STATE */
+.empty-state { text-align: center; padding: 60px 20px; color: var(--slate-400); background: white; border-radius: 20px; border: 1px solid var(--slate-200); }
+.empty-state i { font-size: 48px; margin-bottom: 16px; display: block; }
+.empty-state h3 { font-size: 18px; font-weight: 700; color: var(--slate-600); margin-bottom: 8px; }
+.empty-state p { font-size: 14px; line-height: 1.6; }
+
+/* REFRESH BAR */
+.refresh-bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.refresh-bar .label { font-size: 13px; color: var(--slate-500); }
+.btn-refresh { background: white; border: 1.5px solid var(--slate-200); color: var(--slate-600); border-radius: 10px; padding: 8px 14px; font-size: 12px; font-weight: 600; font-family: 'Plus Jakarta Sans', sans-serif; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all 0.15s; }
+.btn-refresh:hover { background: var(--purple-pale); border-color: var(--purple-light); color: var(--purple); }
+
+.hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="topbar-brand">
+    <div class="topbar-logo"><i class="fas fa-book-quran" style="color:white;font-size:16px;"></i></div>
+    <span class="brand-text">My<span>Hafazan</span></span>
+  </div>
+  <div class="topbar-right">
+    <div class="user-info">
+      <div class="user-name" id="navUserName">Wali</div>
+      <div class="user-role" id="navUserRole">Wali Murid</div>
+    </div>
+    <button class="btn-icon" id="logoutBtn" title="Log Keluar"><i class="fas fa-right-from-bracket"></i></button>
+  </div>
+</div>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-title">Laporan Kemajuan Anak</div>
+  <div class="hero-sub">Pantau perkembangan hafazan anak anda setiap hari</div>
+  <div class="hero-date" id="heroDate"></div>
+</div>
+
+<!-- PAGE -->
+<div class="page">
+  <div class="refresh-bar">
+    <div class="label"><i class="fas fa-circle-info" style="color:var(--purple);margin-right:4px;"></i> Kemaskini berdasarkan log Murabbi terkini</div>
+    <button class="btn-refresh" onclick="location.reload()"><i class="fas fa-rotate"></i> Muat Semula</button>
+  </div>
+
+  <!-- ANNOUNCEMENTS -->
+  <div id="announcementsContainer"></div>
+
+  <!-- CHILDREN CARDS -->
+  <div id="childrenContainer">
+    <div class="empty-state" style="padding:40px;">
+      <i class="fas fa-spinner fa-spin"></i>
+      <p>Memuat maklumat pelajar...</p>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="auth.js"></script>
+<script src="parent.js"></script>
+<script>
+  document.getElementById('heroDate').textContent =
+    new Date().toLocaleDateString('ms-MY', { weekday:'long', day:'2-digit', month:'long', year:'numeric' });
+</script>
+</body>
+</html>
