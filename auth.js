@@ -30,9 +30,12 @@ function routeByRole(role) {
         student: 'parent.html',
     };
     const target = routes[role] || 'index.html';
-    if (!window.location.href.includes(target)) {
-        window.location.href = target;
-    }
+    const currentPath = window.location.pathname;
+    // Already on the correct page — don't redirect (avoids loops)
+    if (currentPath.endsWith(target)) return;
+    // Build correct path relative to current location (works in subfolders like /MyHafazan/)
+    const basePath = currentPath.substring(0, currentPath.lastIndexOf('/') + 1);
+    window.location.href = basePath + target;
 }
 
 // ============================================================
@@ -90,10 +93,13 @@ async function login(email, password) {
 
 async function loginWithGoogle() {
     clearAuthError();
+    // Use the exact current page URL as the redirect target so it works
+    // on both GitHub Pages subfolders (e.g. /MyHafazan/) and custom domains.
+    const redirectTo = window.location.href.split('#')[0].split('?')[0];
     const { error } = await window.supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-            redirectTo: `${window.location.origin}/index.html`,
+            redirectTo,
         },
     });
     if (error) {
@@ -207,8 +213,10 @@ function populateNavProfile(profile) {
 // ============================================================
 
 async function sendPasswordReset(email) {
+    const basePath = window.location.href.split('#')[0].split('?')[0];
+    const resetUrl = basePath.substring(0, basePath.lastIndexOf('/') + 1) + 'reset-password.html';
     const { error } = await window.supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password.html`,
+        redirectTo: resetUrl,
     });
     if (error) throw error;
 }
@@ -241,25 +249,29 @@ async function adminCreateUser(fullName, email, password, role) {
 async function initLoginPage() {
     // Handle OAuth redirect callback + existing sessions
     window.supabase.auth.onAuthStateChange(async (event, session) => {
-        if (event === 'SIGNED_IN' && session) {
+        if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session) {
             const profile = await fetchProfile(session.user.id);
             if (profile) {
                 routeByRole(profile.role);
             } else {
-                // New Google user — trigger may be slightly delayed
-                setTimeout(async () => {
+                // New Google user — DB trigger may be slightly delayed, retry up to 3x
+                let attempts = 0;
+                const retry = setInterval(async () => {
+                    attempts++;
                     const retryProfile = await fetchProfile(session.user.id);
                     if (retryProfile) {
+                        clearInterval(retry);
                         routeByRole(retryProfile.role);
-                    } else {
-                        showAuthError('Profil tidak dijumpai. Hubungi admin.');
+                    } else if (attempts >= 4) {
+                        clearInterval(retry);
+                        showAuthError('Profil tidak dijumpai. Sila hubungi admin.');
                     }
                 }, 1500);
             }
         }
     });
 
-    // Check if already logged in
+    // Check if already logged in (also handles the #access_token hash from OAuth)
     const { data: { session } } = await window.supabase.auth.getSession();
     if (session) {
         const profile = await fetchProfile(session.user.id);
