@@ -78,7 +78,7 @@ function switchTab(tab) {
 async function loadDropdownData() {
     const [teacherRes, halaqahRes, parentRes] = await Promise.all([
         supabase.from('profiles').select('id, full_name, email').eq('role', 'teacher').order('full_name'),
-        supabase.from('halaqahs').select('id, name, teacher_id, room, session_time, profiles(full_name)').eq('is_active', true).order('name'),
+        supabase.from('halaqahs').select('id, name, teacher_id, room, session_time').eq('is_active', true).order('name'),
         supabase.from('profiles').select('id, full_name, email').eq('role', 'parent').order('full_name'),
     ]);
 
@@ -313,7 +313,7 @@ async function loadHalaqahGrid() {
     if (!grid) return;
     grid.innerHTML = '<div class="empty-msg"><i class="fas fa-spinner fa-spin"></i></div>';
 
-    const { data, error } = await supabase.from('halaqahs').select('*, profiles(full_name)').eq('is_active', true).order('name');
+    const { data, error } = await supabase.from('halaqahs').select('id, name, teacher_id, room, session_time, profiles(full_name)').eq('is_active', true).order('name');
     allHalaqahs = data || [];
 
     if (error || !data?.length) {
@@ -358,8 +358,9 @@ function openHalaqahModal(id = null, name = '', teacherId = '', room = '', time 
 
     // Pre-select teacher
     const sel = document.getElementById('editHalaqahTeacher');
+    const currentTeacherId = String(teacherId || '');
     sel.innerHTML = '<option value="">-- Pilih Murabbi --</option>' +
-        allTeachers.map(t => `<option value="${t.id}" ${t.id === teacherId ? 'selected' : ''}>${t.full_name}</option>`).join('');
+        allTeachers.map(t => `<option value="${t.id}" ${String(t.id) === currentTeacherId ? 'selected' : ''}>${t.full_name}</option>`).join('');
 
     openModal('halaqahModal');
 }

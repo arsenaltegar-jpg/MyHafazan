@@ -72,7 +72,7 @@ async function loadAnnouncements(role) {
 async function loadChildren(parentId) {
     const { data: students, error } = await supabase
         .from('students')
-        .select(`*, halaqahs(name, profiles(full_name))`)
+        .select(`*, halaqahs(name, teacher_id, profiles!halaqahs_teacher_id_fkey(full_name))`)
         .eq('parent_id', parentId)
         .eq('is_active', true);
 
