@@ -168,6 +168,42 @@ body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--slate-100
 .btn-refresh:hover { background: var(--purple-pale); border-color: var(--purple-light); color: var(--purple); }
 
 .hidden { display: none !important; }
+
+@media (max-width: 640px) {
+  .topbar { padding: 0 14px; height: 54px; }
+  .topbar-title, .brand-text { font-size: 16px; }
+  .user-name { font-size: 12px; }
+  .user-role { display: none; }
+
+  .hero { padding: 20px 16px; }
+  .hero-title { font-size: 20px; }
+  .hero-sub { font-size: 12px; }
+
+  .page { padding: 14px 12px 60px; }
+
+  .refresh-bar { flex-direction: column; align-items: flex-start; gap: 8px; }
+  .btn-refresh { width: 100%; justify-content: center; }
+
+  .cc-header { padding: 16px; gap: 12px; flex-wrap: wrap; }
+  .cc-avatar { width: 52px; height: 52px; font-size: 18px; }
+  .cc-name { font-size: 16px; }
+  .cc-header-right { width: 100%; display: flex; justify-content: flex-end; margin-top: -8px; }
+
+  .cc-hutang-number { font-size: 52px; }
+
+  .cc-stats { padding: 12px 16px; }
+  .cc-stat-value { font-size: 18px; }
+  .cc-stat-label { font-size: 10px; }
+
+  .cc-progress-section, .cc-logs-section { padding-left: 14px; padding-right: 14px; }
+
+  .log-item { flex-wrap: wrap; gap: 6px; }
+  .log-info { flex-wrap: wrap; }
+
+  .announcement-header { padding: 10px 14px; }
+  .announcement-item { padding: 12px 14px; }
+  .announcement-title { font-size: 13px; }
+}
 </style>
 </head>
 <body>

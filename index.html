@@ -208,7 +208,20 @@
 
   .footer-text { text-align: center; margin-top: 24px; font-size: 11px; color: rgba(255,255,255,0.2); }
 
-  @media (max-width: 480px) { .card { padding: 28px 20px; } }
+  @media (max-width: 480px) {
+    body { align-items: flex-start; padding: 0; }
+    .login-wrapper { padding: 24px 16px 40px; max-width: 100%; }
+    .logo-area { margin-bottom: 24px; }
+    .logo-icon { width: 60px; height: 60px; border-radius: 16px; }
+    .logo-icon i { font-size: 26px; }
+    .logo-title { font-size: 24px; }
+    .card { padding: 24px 18px; border-radius: 18px; }
+    .card-title { font-size: 19px; }
+    .field input { font-size: 16px; /* prevent iOS zoom */ }
+    .btn-login { padding: 15px; font-size: 15px; }
+    .btn-google { padding: 14px; font-size: 14px; }
+    .role-badges { gap: 6px; }
+  }
 </style>
 </head>
 <body>

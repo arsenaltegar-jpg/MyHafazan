@@ -304,10 +304,91 @@ tbody td{padding:11px 14px;font-size:13.5px;color:var(--s700);}
   .mgmt-grid{grid-template-columns:1fr;}
   .rpt-grid{grid-template-columns:1fr;}
 }
+@media(max-width:640px){
+  /* Sidebar overlay backdrop */
+  .sidebar.open::after{
+    content:'';position:fixed;inset:0;background:rgba(0,0,0,.5);
+    z-index:-1;
+  }
+
+  .topbar{padding:0 14px;height:54px;}
+  .tb-title{font-size:15px;}
+  .tb-date{display:none;}
+  .tb-right .btn-secondary{display:none;} /* hide reload on mobile, save space */
+
+  .page{padding:14px 12px 80px;}
+
+  /* Stats: 2 cols */
+  .stats-row{grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
+  .stat-card{padding:14px 14px;gap:10px;}
+  .stat-icon{width:38px;height:38px;font-size:15px;}
+  .stat-val{font-size:22px;}
+  .stat-lbl{font-size:10px;}
+
+  /* Page headers */
+  .page-hd{flex-direction:column;align-items:flex-start;gap:10px;}
+  .page-hd .btn-primary{width:100%;justify-content:center;}
+
+  /* Tables: horizontal scroll + smaller text */
+  .table-wrap{-webkit-overflow-scrolling:touch;}
+  table{min-width:520px;}
+  thead th{padding:9px 10px;font-size:10px;}
+  tbody td{padding:9px 10px;font-size:12px;}
+
+  /* Toolbar filters stack */
+  .toolbar{gap:8px;}
+  .filter-select{flex:1;min-width:0;font-size:12px;padding:8px 8px;}
+  .toolbar .btn-secondary{width:100%;justify-content:center;}
+
+  /* Management grid already 1col, tighten padding */
+  .mgmt-card-body{padding:14px 16px;}
+  .mgmt-card-hd{padding:13px 16px;}
+
+  /* Halaqah grid 1 col */
+  .halaqah-grid{grid-template-columns:1fr;}
+
+  /* Batch CSV grid -> 1 col */
+  #pane-batch [style*="grid-template-columns:1fr 1fr"]{
+    display:block!important;
+  }
+  #pane-batch [style*="grid-template-columns:1fr 1fr"] > *{
+    margin-bottom:14px;
+  }
+
+  /* Announcements grid -> 1 col */
+  #pane-announcements [style*="grid-template-columns:380px"]{
+    display:block!important;
+  }
+  #pane-announcements [style*="grid-template-columns:380px"] > *{
+    margin-bottom:14px;
+  }
+
+  /* RPT editor already 1col */
+  .rpt-input{width:70px;}
+
+  /* Modal full width */
+  .modal-ov{padding:0;align-items:flex-end;}
+  .modal{border-radius:20px 20px 0 0;max-width:100%;max-height:92vh;padding:22px 18px;}
+  @keyframes popIn{from{opacity:0;transform:translateY(60px)}to{opacity:1;transform:translateY(0)}}
+
+  /* Edit modal inner grid -> 1 col */
+  .modal [style*="grid-template-columns:1fr 1fr"]{display:block!important;}
+  .modal [style*="grid-template-columns:1fr 1fr"] .field{margin-bottom:14px;}
+
+  /* Inputs: 16px prevents iOS zoom */
+  .field input,.field select,.field textarea,.search-wrap input,.filter-select{font-size:16px!important;}
+
+  /* Card headers */
+  .card-hd{padding:14px 16px 0;}
+  .card-body{padding:14px 16px;}
+
+  /* Bottom row charts */
+  canvas{max-width:100%!important;}
+}
 @media(max-width:480px){
   .stats-row{grid-template-columns:1fr 1fr;}
-  .page{padding:16px 14px 80px;}
-  .topbar{padding:0 16px;}
+  .page{padding:12px 10px 80px;}
+  .topbar{padding:0 12px;}
 }
 </style>
 </head>
@@ -840,6 +921,12 @@ tbody td{padding:11px 14px;font-size:13.5px;color:var(--s700);}
         !sidebar.contains(e.target) && !menuToggle.contains(e.target)) {
       sidebar.classList.remove('open');
     }
+  });
+  // Close sidebar when a nav item is clicked on mobile
+  sidebar.querySelectorAll('.nav-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (window.innerWidth <= 900) sidebar.classList.remove('open');
+    });
   });
 </script>
 </body>
