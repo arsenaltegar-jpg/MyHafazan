@@ -24,7 +24,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     populateNavProfile(profile);
 
-    // Load data in parallel
     await Promise.all([
         loadChildren(profile.id),
         loadAnnouncements(profile.role),
@@ -70,31 +69,22 @@ async function loadAnnouncements(role) {
 // ============================================================
 
 async function loadChildren(parentId) {
+    // Use student_progress view — it already has:
+    // target_page_total  → auto-calculated via get_rpt_target() per form_level
+    // hutang             → target_page_total - current_page
+    // status             → ahead / warning / behind / no_rpt / no_form
+    // halaqah_name, teacher_name, parent_name
     const { data: students, error } = await supabase
-        .from('students')
-        .select(`*, halaqahs(name, teacher_id, teacher:profiles!halaqahs_teacher_id_fkey(full_name))`)
-        .eq('parent_id', parentId)
-        .eq('is_active', true);
-
-console.log('RAW students data:', JSON.stringify(students, null, 2)); // ADD THIS
+        .from('student_progress')
+        .select('*')
+        .eq('parent_id', parentId);
 
     if (error) { console.error(error); return; }
 
-    // Today's RPT target
-    const { data: rpt } = await supabase
-        .from('rpt_targets')
-        .select('target_page_total, juz_reference')
-        .eq('date', getTodayDate())
-        .single();
-
-    const todayTarget = rpt?.target_page_total || null;
-
-    myChildren = (students || []).map(s => ({
-        ...s,
-        hutang: todayTarget !== null ? todayTarget - s.current_page : null,
-        todayTarget,
-        todayJuz: rpt?.juz_reference || null,
-    }));
+    // Also fetch photo_url and halaqah teacher details not in the view
+    // We enrich with halaqah join for teacher name (already in view as teacher_name)
+    // Fetch photo separately since student_progress exposes photo_url
+    myChildren = students || [];
 
     renderChildren();
 }
@@ -119,47 +109,59 @@ function renderChildren() {
 
     container.innerHTML = myChildren.map(child => renderChildCard(child)).join('');
 
-    // Load logs for each child
     myChildren.forEach(child => loadChildLogs(child.id));
 }
 
 function renderChildCard(child) {
-    const hutang = child.hutang;
-    const todayTarget = child.todayTarget;
+    const hutang      = child.hutang;
+    const todayTarget = child.target_page_total;
+    const status      = child.status;
 
-    // Status logic
-    let statusClass = 'status-green';
-    let statusText = 'Melebihi / Mencapai';
-    let statusIcon = 'fa-circle-check';
+    // Status display logic
+    let statusClass   = 'status-green';
+    let statusText    = 'Melebihi / Mencapai';
+    let statusIcon    = 'fa-circle-check';
     let hutangDisplay = '';
 
-    if (hutang === null) {
-        statusClass = 'status-gray';
-        statusText = 'Sasaran RPT Belum Ditetapkan';
-        statusIcon = 'fa-circle-minus';
+    if (status === 'no_form') {
+        statusClass   = 'status-gray';
+        statusText    = 'Tingkatan belum ditetapkan';
+        statusIcon    = 'fa-circle-minus';
+        hutangDisplay = '–';
+    } else if (status === 'no_rpt') {
+        statusClass   = 'status-gray';
+        statusText    = 'Sasaran RPT Belum Ditetapkan';
+        statusIcon    = 'fa-circle-minus';
+        hutangDisplay = '–';
+    } else if (hutang === null) {
+        statusClass   = 'status-gray';
+        statusText    = 'Tiada Data';
+        statusIcon    = 'fa-circle-minus';
         hutangDisplay = '–';
     } else if (hutang > 0) {
-        statusClass = hutang > 15 ? 'status-red' : 'status-orange';
-        statusText = `Ketinggalan ${hutang} Muka Surat`;
-        statusIcon = hutang > 15 ? 'fa-circle-exclamation' : 'fa-triangle-exclamation';
+        statusClass   = hutang > 15 ? 'status-red' : 'status-orange';
+        statusText    = `Ketinggalan ${hutang} Muka Surat`;
+        statusIcon    = hutang > 15 ? 'fa-circle-exclamation' : 'fa-triangle-exclamation';
         hutangDisplay = `+${hutang}`;
     } else if (hutang === 0) {
         hutangDisplay = '0';
-        statusText = 'Tepat Mencapai Sasaran';
+        statusText    = 'Tepat Mencapai Sasaran';
     } else {
         hutangDisplay = Math.abs(hutang).toString();
-        statusText = `Melebihi ${Math.abs(hutang)} Muka Surat`;
+        statusText    = `Melebihi ${Math.abs(hutang)} Muka Surat`;
     }
 
     // Juz progress (20 pages per juz)
-    const juzStart = (child.current_juz - 1) * 20 + 1;
-    const juzEnd = child.current_juz * 20;
-    const juzProgress = Math.min(100, Math.max(0, ((child.current_page - juzStart) / 20) * 100));
+    const currentJuz   = child.current_juz || 1;
+    const juzStart     = (currentJuz - 1) * 20 + 1;
+    const juzEnd       = currentJuz * 20;
+    const juzProgress  = Math.min(100, Math.max(0, ((child.current_page - juzStart) / 20) * 100));
     const totalProgress = Math.min(100, (child.current_page / 604) * 100);
 
-    const initials = child.full_name.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
-    const teacherName = child.halaqahs?.teacher?.full_name || 'Tiada Murabbi';
-    const halaqahName = child.halaqahs?.name || 'Tiada Halaqah';
+    const initials    = child.full_name.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
+    const teacherName = child.teacher_name || 'Tiada Murabbi';
+    const halaqahName = child.halaqah_name || 'Tiada Halaqah';
+    const formLabel   = child.form_level   ? `Tingkatan ${child.form_level}` : '';
 
     return `
     <div class="child-card">
@@ -175,9 +177,10 @@ function renderChildCard(child) {
           <div class="cc-name">${child.full_name}</div>
           <div class="cc-halaqah"><i class="fas fa-circle-nodes"></i> ${halaqahName}</div>
           <div class="cc-teacher"><i class="fas fa-chalkboard-user"></i> ${teacherName}</div>
+          ${formLabel ? `<div class="cc-teacher" style="margin-top:2px;"><i class="fas fa-school"></i> ${formLabel}</div>` : ''}
         </div>
         <div class="cc-header-right">
-          <div class="cc-juz-badge">Juzuk ${child.current_juz}</div>
+          <div class="cc-juz-badge">Juzuk ${currentJuz}</div>
         </div>
       </div>
 
@@ -199,7 +202,7 @@ function renderChildCard(child) {
         <div class="cc-stat-divider"></div>
         <div class="cc-stat">
           <div class="cc-stat-label">Sasaran RPT</div>
-          <div class="cc-stat-value">${todayTarget !== null ? todayTarget : '–'}</div>
+          <div class="cc-stat-value">${todayTarget !== null && todayTarget !== undefined ? todayTarget : '–'}</div>
         </div>
         <div class="cc-stat-divider"></div>
         <div class="cc-stat">
@@ -211,7 +214,7 @@ function renderChildCard(child) {
       <!-- JUZ PROGRESS -->
       <div class="cc-progress-section">
         <div class="cc-progress-header">
-          <span class="cc-progress-label"><i class="fas fa-layer-group"></i> Kemajuan Juzuk ${child.current_juz}</span>
+          <span class="cc-progress-label"><i class="fas fa-layer-group"></i> Kemajuan Juzuk ${currentJuz}</span>
           <span class="cc-progress-pct">${Math.round(juzProgress)}%</span>
         </div>
         <div class="cc-progress-track">
@@ -259,7 +262,7 @@ async function loadChildLogs(studentId) {
 
     const typeLabels = { jadid: 'Hifz Jadid', murajaah_u: 'Murajaah Umum', murajaah_q: 'Murajaah Khas' };
     const typeColors = { jadid: '#6B21A8', murajaah_u: '#16A34A', murajaah_q: '#D97706' };
-    const typeBg = { jadid: '#F3E8FF', murajaah_u: '#DCFCE7', murajaah_q: '#FEF3C7' };
+    const typeBg     = { jadid: '#F3E8FF', murajaah_u: '#DCFCE7', murajaah_q: '#FEF3C7' };
 
     if (!logs || !logs.length) {
         container.innerHTML = '<p class="no-logs"><i class="fas fa-inbox"></i> Belum ada log tasmik.</p>';
