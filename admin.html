@@ -734,8 +734,8 @@ tbody td{padding:11px 14px;font-size:13.5px;color:var(--s700);}
               <p style="margin-bottom:12px;">Pastikan fail CSV anda mengikut format berikut:</p>
               <div style="background:var(--s900);border-radius:9px;padding:14px;font-family:'DM Mono',monospace;font-size:12px;color:#86efac;margin-bottom:14px;overflow-x:auto;">
                 full_name,matric_no,form_level,halaqah_name,parent_email<br>
-                Ahmad Faris,MT2025001,1,Halaqah Al-Baqarah,abu@email.com<br>
-                Siti Aisyah,MT2025002,2,Halaqah Al-Fatihah,ali@email.com
+                Ahmad Faris,MT2025001,1,Halaqah Al-Baqarah,<a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="4e2f2c3b0e2b232f2722602d2123">[email&#160;protected]</a><br>
+                Siti Aisyah,MT2025002,2,Halaqah Al-Fatihah,<a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="5a3b36331a3f373b333674393537">[email&#160;protected]</a>
               </div>
               <div style="display:flex;flex-direction:column;gap:8px;">
                 <div style="display:flex;gap:8px;align-items:flex-start;"><i class="fas fa-check-circle" style="color:var(--g);margin-top:2px;flex-shrink:0;"></i><span><strong>full_name</strong> – Wajib.</span></div>
@@ -872,8 +872,17 @@ tbody td{padding:11px 14px;font-size:13.5px;color:var(--s700);}
             </div>
             <div class="mgmt-card-body">
               <form id="formAddHoliday">
-                <div class="field"><label>Tarikh</label><input type="date" id="holidayDate" required /></div>
-                <div class="field"><label>Keterangan</label><input type="text" id="holidayDesc" placeholder="cth: Hari Raya Aidilfitri" required /></div>
+                <div class="rpt-section-grid" style="grid-template-columns:1fr 1fr;gap:10px;">
+                  <div class="field">
+                    <label>Tarikh Mula</label>
+                    <input type="date" id="holidayDate" required />
+                  </div>
+                  <div class="field">
+                    <label>Tarikh Akhir <span style="font-weight:400;color:var(--s400);font-size:11px;">(kosongkan jika 1 hari)</span></label>
+                    <input type="date" id="holidayEndDate" />
+                  </div>
+                </div>
+                <div class="field"><label>Keterangan</label><input type="text" id="holidayDesc" placeholder="cth: Cuti Pertengahan Penggal 1" required /></div>
                 <div class="field">
                   <label>Jenis Cuti</label>
                   <select id="holidayType">
@@ -881,6 +890,7 @@ tbody td{padding:11px 14px;font-size:13.5px;color:var(--s700);}
                     <option value="school_holiday">Cuti Sekolah</option>
                   </select>
                 </div>
+                <div class="info-banner" style="margin-bottom:10px;"><i class="fas fa-circle-info"></i> Hujung minggu (Sabtu & Ahad) tidak akan dikira walaupun dalam julat cuti.</div>
                 <button type="submit" class="btn-primary" style="width:100%;justify-content:center;"><i class="fas fa-plus"></i> Tambah Cuti</button>
               </form>
             </div>
@@ -1094,7 +1104,7 @@ tbody td{padding:11px 14px;font-size:13.5px;color:var(--s700);}
 <!-- ════════ TOAST ════════ -->
 <div class="toast" id="toast"></div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
 <script src="auth.js"></script>
 <script src="admin.js"></script>
@@ -1119,14 +1129,3 @@ tbody td{padding:11px 14px;font-size:13.5px;color:var(--s700);}
 
   // RPT sub-tab switcher
   function switchRptTab(tab) {
-    document.querySelectorAll('.rpt-tab-btn').forEach((b, i) => {
-      const tabs = ['plans','holidays','overrides'];
-      b.classList.toggle('active', tabs[i] === tab);
-    });
-    document.querySelectorAll('.rpt-tab-pane').forEach(p => {
-      p.classList.toggle('active', p.id === `rpt-pane-${tab}`);
-    });
-  }
-</script>
-</body>
-</html>
