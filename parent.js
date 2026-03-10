@@ -76,6 +76,8 @@ async function loadChildren(parentId) {
         .eq('parent_id', parentId)
         .eq('is_active', true);
 
+console.log('RAW students data:', JSON.stringify(students, null, 2)); // ADD THIS
+
     if (error) { console.error(error); return; }
 
     // Today's RPT target
