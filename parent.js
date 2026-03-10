@@ -72,7 +72,7 @@ async function loadAnnouncements(role) {
 async function loadChildren(parentId) {
     const { data: students, error } = await supabase
         .from('students')
-        .select(`*, halaqahs(name, teacher_id, profiles!halaqahs_teacher_id_fkey(full_name))`)
+        .select(`*, halaqahs(name, teacher_id, teacher:profiles!halaqahs_teacher_id_fkey(full_name))`)
         .eq('parent_id', parentId)
         .eq('is_active', true);
 
@@ -156,7 +156,7 @@ function renderChildCard(child) {
     const totalProgress = Math.min(100, (child.current_page / 604) * 100);
 
     const initials = child.full_name.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
-    const teacherName = child.halaqahs?.profiles?.full_name || 'Tiada Murabbi';
+    const teacherName = child.halaqahs?.teacher?.full_name || 'Tiada Murabbi';
     const halaqahName = child.halaqahs?.name || 'Tiada Halaqah';
 
     return `
