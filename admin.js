@@ -77,9 +77,9 @@ function switchTab(tab) {
 
 async function loadDropdownData() {
     const [teacherRes, halaqahRes, parentRes] = await Promise.all([
-        supabase.from('profiles').select('id, full_name, email').eq('role', 'teacher').order('full_name'),
+        supabase.from('profiles').select('id, full_name, phone').eq('role', 'teacher').order('full_name'),
         supabase.from('halaqahs').select('id, name, teacher_id, room, session_time').eq('is_active', true).order('name'),
-        supabase.from('profiles').select('id, full_name, email').eq('role', 'parent').order('full_name'),
+        supabase.from('profiles').select('id, full_name, phone').eq('role', 'parent').order('full_name'),
     ]);
 
     allTeachers = teacherRes.data || [];
@@ -356,7 +356,7 @@ function openHalaqahModal(id = null, name = '', teacherId = '', room = '', time 
     document.getElementById('halaqahModalTitle').innerHTML =
         `<i class="fas fa-circle-nodes" style="color:var(--g);margin-right:8px;font-size:15px;"></i>${id ? 'Kemaskini Halaqah' : 'Tambah Halaqah Baru'}`;
 
-    // Pre-select teacher
+    // Pre-select teacher using allTeachers already loaded (no email field)
     const sel = document.getElementById('editHalaqahTeacher');
     const currentTeacherId = String(teacherId || '');
     sel.innerHTML = '<option value="">-- Pilih Murabbi --</option>' +
@@ -405,7 +405,7 @@ async function loadTeachersTable() {
     if (!tbody) return;
     tbody.innerHTML = '<tr class="empty-row"><td colspan="4"><i class="fas fa-spinner fa-spin"></i></td></tr>';
 
-    const { data: teachers } = await supabase.from('profiles').select('id,full_name,email').eq('role','teacher').order('full_name');
+    const { data: teachers } = await supabase.from('profiles').select('id, full_name, phone').eq('role','teacher').order('full_name');
     allTeachers = teachers || [];
 
     if (!allTeachers.length) {
@@ -421,7 +421,7 @@ async function loadTeachersTable() {
     tbody.innerHTML = allTeachers.map(t => `
         <tr>
           <td><div class="td-name"><div class="av-sm" style="background:linear-gradient(135deg,var(--p),var(--pl));">${(t.full_name||'?')[0]}</div>${t.full_name}</div></td>
-          <td style="color:var(--s500);">${t.email || '–'}</td>
+          <td style="color:var(--s500);">${t.phone || '–'}</td>
           <td>${hMap[t.id] ? `<span class="badge badge-g">${hMap[t.id]}</span>` : '<span style="color:var(--s400);">Tiada halaqah</span>'}</td>
           <td><button class="btn-sm btn-danger" onclick="removeUser('${t.id}','${(t.full_name||'').replace(/'/g,"\\'")}')"><i class="fas fa-user-minus"></i> Alih Keluar</button></td>
         </tr>`).join('');
@@ -437,7 +437,7 @@ async function loadParentsTable() {
     if (!tbody) return;
     tbody.innerHTML = '<tr class="empty-row"><td colspan="4"><i class="fas fa-spinner fa-spin"></i></td></tr>';
 
-    const { data: parents } = await supabase.from('profiles').select('id,full_name,email').eq('role','parent').order('full_name');
+    const { data: parents } = await supabase.from('profiles').select('id, full_name, phone').eq('role','parent').order('full_name');
     allParentsCache = parents || [];
 
     if (!allParentsCache.length) {
@@ -459,7 +459,7 @@ function renderParentRows(parents, childCount) {
     tbody.innerHTML = parents.map(p => `
         <tr>
           <td><div class="td-name"><div class="av-sm" style="background:linear-gradient(135deg,var(--gold),#F59E0B);">${(p.full_name||'?')[0]}</div>${p.full_name}</div></td>
-          <td style="color:var(--s500);">${p.email || '–'}</td>
+          <td style="color:var(--s500);">${p.phone || '–'}</td>
           <td><span class="badge badge-p">${childCount[p.id]||0} anak</span></td>
           <td><button class="btn-sm btn-danger" onclick="removeUser('${p.id}','${(p.full_name||'').replace(/'/g,"\\'")}')"><i class="fas fa-user-minus"></i> Alih Keluar</button></td>
         </tr>`).join('');
@@ -468,7 +468,7 @@ function renderParentRows(parents, childCount) {
 function filterParentTable(query) {
     const filtered = allParentsCache.filter(p =>
         (p.full_name||'').toLowerCase().includes(query.toLowerCase()) ||
-        (p.email||'').toLowerCase().includes(query.toLowerCase())
+        (p.phone||'').toLowerCase().includes(query.toLowerCase())
     );
     renderParentRows(filtered, window._parentChildCount || {});
 }
@@ -706,9 +706,9 @@ async function importCSV() {
     const halaqahMap = {};
     allHalaqahs.forEach(h => { halaqahMap[h.name.toLowerCase()] = h.id; });
 
-    const { data: parentProfiles } = await supabase.from('profiles').select('id, email').eq('role', 'parent');
+    const { data: parentProfiles } = await supabase.from('profiles').select('id, phone').eq('role', 'parent');
     const parentMap = {};
-    (parentProfiles || []).forEach(p => { if (p.email) parentMap[p.email.toLowerCase()] = p.id; });
+    (parentProfiles || []).forEach(p => { if (p.phone) parentMap[p.phone.toLowerCase()] = p.id; });
 
     let success = 0, failed = 0, errors = [];
 
