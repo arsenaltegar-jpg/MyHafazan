@@ -1,5 +1,5 @@
 // ============================================================
-// MYHAFAZAN MTSD - admin.js (Enhanced v2)
+// MYHAFAZAN MTSD - admin.js (Enhanced v3 — RPT Plan System)
 // ============================================================
 
 let donutChart = null;
@@ -9,6 +9,17 @@ let allHalaqahs = [];
 let allTeachers = [];
 let allParents = [];
 let csvParsedRows = [];
+
+// Juz → page reference (standard Quran 604 pages / 30 juz)
+const JUZ_PAGE_MAP = {
+  1:1,2:22,3:42,4:62,5:82,6:102,7:121,8:142,9:162,10:182,
+  11:201,12:222,13:242,14:262,15:282,16:302,17:322,18:342,
+  19:362,20:382,21:402,22:422,23:442,24:462,25:482,26:502,
+  27:522,28:542,29:562,30:582,31:604
+};
+
+function juzToStartPage(juz) { return JUZ_PAGE_MAP[juz] || 1; }
+function juzToEndPage(juz)   { return (JUZ_PAGE_MAP[juz + 1] || 605) - 1; }
 
 // ============================================================
 // INIT
@@ -24,8 +35,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     await loadDashboard();
     initRealtime();
     bindForms();
-
-    document.getElementById('rptDate')?.setAttribute('value', getTodayDate());
 });
 
 // ============================================================
@@ -36,7 +45,6 @@ function initNavigation() {
     document.querySelectorAll('[data-tab]').forEach(btn => {
         btn.addEventListener('click', () => {
             switchTab(btn.dataset.tab);
-            // close sidebar on mobile
             if (window.innerWidth <= 900) {
                 document.getElementById('sidebar').classList.remove('open');
             }
@@ -50,24 +58,24 @@ function switchTab(tab) {
         p.classList.toggle('active', p.id === `pane-${tab}`);
     });
     const titles = {
-        dashboard: 'Papan Pemuka Admin',
-        students: 'Semua Pelajar',
-        halaqah: 'Pengurusan Halaqah',
-        teachers: 'Senarai Murabbi',
-        parents: 'Senarai Wali Murid',
-        register: 'Daftar Pengguna & Pelajar',
-        batch: 'Muat Naik CSV',
-        rpt: 'Editor RPT',
+        dashboard:     'Papan Pemuka Admin',
+        students:      'Semua Pelajar',
+        halaqah:       'Pengurusan Halaqah',
+        teachers:      'Senarai Murabbi',
+        parents:       'Senarai Wali Murid',
+        register:      'Daftar Pengguna & Pelajar',
+        batch:         'Muat Naik CSV',
+        rpt:           'Pengurusan RPT',
         announcements: 'Pengumuman',
     };
     document.getElementById('topbarTitle').textContent = titles[tab] || 'Admin';
 
-    if (tab === 'dashboard') loadDashboard();
-    if (tab === 'students') renderStudentTable();
-    if (tab === 'halaqah') loadHalaqahGrid();
-    if (tab === 'teachers') loadTeachersTable();
-    if (tab === 'parents') loadParentsTable();
-    if (tab === 'rpt') loadRPTEditor();
+    if (tab === 'dashboard')     loadDashboard();
+    if (tab === 'students')      renderStudentTable();
+    if (tab === 'halaqah')       loadHalaqahGrid();
+    if (tab === 'teachers')      loadTeachersTable();
+    if (tab === 'parents')       loadParentsTable();
+    if (tab === 'rpt')           loadRPTManager();
     if (tab === 'announcements') loadAnnouncements();
 }
 
@@ -84,14 +92,13 @@ async function loadDropdownData() {
 
     allTeachers = teacherRes.data || [];
     allHalaqahs = halaqahRes.data || [];
-    allParents = parentRes.data || [];
+    allParents  = parentRes.data  || [];
 
-    populateSelects('.sel-teacher', allTeachers, '-- Pilih Murabbi --');
-    populateSelects('.sel-halaqah', allHalaqahs, '-- Pilih Halaqah --');
+    populateSelects('.sel-teacher',      allTeachers, '-- Pilih Murabbi --');
+    populateSelects('.sel-halaqah',      allHalaqahs, '-- Pilih Halaqah --');
     populateSelects('.sel-halaqah-edit', allHalaqahs, '-- Pilih Halaqah --');
-    populateSelects('.sel-parent', allParents, '-- Tiada Wali --');
+    populateSelects('.sel-parent',       allParents,  '-- Tiada Wali --');
 
-    // Halaqah filter in students tab
     const hf = document.getElementById('halaqahFilter');
     if (hf) {
         hf.innerHTML = '<option value="">Semua Halaqah</option>' +
@@ -115,28 +122,46 @@ async function loadDashboard() {
         const { data: students } = await supabase.from('student_progress').select('*');
         allStudents = students || [];
 
-        const total = allStudents.length;
-        const ahead = allStudents.filter(s => s.status === 'ahead').length;
+        const total   = allStudents.length;
+        const ahead   = allStudents.filter(s => s.status === 'ahead').length;
         const warning = allStudents.filter(s => s.status === 'warning').length;
-        const behind = allStudents.filter(s => s.status === 'behind').length;
+        const behind  = allStudents.filter(s => s.status === 'behind').length;
 
-        document.getElementById('statTotal').textContent = total;
-        document.getElementById('statAhead').textContent = ahead;
+        document.getElementById('statTotal').textContent   = total;
+        document.getElementById('statAhead').textContent   = ahead;
         document.getElementById('statWarning').textContent = warning;
-        document.getElementById('statBehind').textContent = behind;
+        document.getElementById('statBehind').textContent  = behind;
 
         renderDonutChart(ahead, warning, behind);
         renderBarChart([...allStudents].filter(s => s.hutang > 0).sort((a,b) => b.hutang - a.hutang).slice(0, 8));
 
-        const { data: rpt } = await supabase.from('rpt_targets').select('target_page_total,juz_reference').eq('date', getTodayDate()).single();
-        document.getElementById('todayTarget').textContent = rpt?.target_page_total ?? '–';
-        document.getElementById('todayJuz').textContent = rpt ? `Juzuk ${rpt.juz_reference || '–'}` : 'Tiada sasaran RPT hari ini';
-
+        loadTodayFormTargets();
         loadRecentLogs();
         loadTopStudents();
     } catch (err) {
         console.error('Dashboard error:', err);
     }
+}
+
+async function loadTodayFormTargets() {
+    const el    = document.getElementById('todayTarget');
+    const elJuz = document.getElementById('todayJuz');
+    if (!el) return;
+
+    const { data: plans } = await supabase
+        .from('rpt_plans')
+        .select('form_level, juz_start, juz_end')
+        .eq('year', new Date().getFullYear())
+        .order('form_level');
+
+    if (!plans?.length) {
+        el.textContent = '–';
+        if (elJuz) elJuz.textContent = 'Tiada pelan RPT ditetapkan';
+        return;
+    }
+
+    el.textContent = plans.length + ' Tingkatan';
+    if (elJuz) elJuz.textContent = plans.map(p => `T${p.form_level}: J${p.juz_start}–J${p.juz_end}`).join(' · ');
 }
 
 function renderDonutChart(ahead, warning, behind) {
@@ -190,7 +215,7 @@ async function loadRecentLogs() {
     const el = document.getElementById('recentLogs');
     if (!el) return;
     const typeLabels = { jadid: 'Hifz Jadid', murajaah_u: 'Murajaah Umum', murajaah_q: 'Murajaah Khas' };
-    const typeCls = { jadid: 'badge-p', murajaah_u: 'badge-g', murajaah_q: 'badge-gold' };
+    const typeCls    = { jadid: 'badge-p', murajaah_u: 'badge-g', murajaah_q: 'badge-gold' };
     if (!logs?.length) { el.innerHTML = '<div class="empty-msg">Tiada log lagi.</div>'; return; }
     el.innerHTML = logs.map(l => `
         <div class="log-item">
@@ -234,7 +259,7 @@ function timeAgo(d) {
 function initRealtime() {
     supabase.channel('admin-changes')
         .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'hifz_logs' }, loadDashboard)
-        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'students' }, loadDashboard)
+        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'students' },  loadDashboard)
         .subscribe();
 }
 
@@ -242,23 +267,24 @@ function initRealtime() {
 // STUDENT TABLE
 // ============================================================
 
-async function renderStudentTable(filter = '', halaqahId = '', status = '') {
+async function renderStudentTable(filter = '', halaqahId = '', status = '', formLevel = '') {
     const tbody = document.getElementById('studentTableBody');
     if (!tbody) return;
 
     if (!allStudents.length) {
-        tbody.innerHTML = '<tr class="empty-row"><td colspan="7"><i class="fas fa-spinner fa-spin"></i> Memuat...</td></tr>';
+        tbody.innerHTML = '<tr class="empty-row"><td colspan="8"><i class="fas fa-spinner fa-spin"></i> Memuat...</td></tr>';
         const { data } = await supabase.from('student_progress').select('*').order('hutang', { ascending: false });
         allStudents = data || [];
     }
 
     let data = [...allStudents];
-    if (filter) data = data.filter(s => s.full_name?.toLowerCase().includes(filter) || s.matric_no?.toLowerCase().includes(filter));
+    if (filter)    data = data.filter(s => s.full_name?.toLowerCase().includes(filter) || s.matric_no?.toLowerCase().includes(filter));
     if (halaqahId) data = data.filter(s => String(s.halaqah_id) === halaqahId);
-    if (status) data = data.filter(s => s.status === status);
+    if (status)    data = data.filter(s => s.status === status);
+    if (formLevel) data = data.filter(s => String(s.form_level) === formLevel);
 
     if (!data.length) {
-        tbody.innerHTML = '<tr class="empty-row"><td colspan="7"><i class="fas fa-inbox"></i> Tiada pelajar dijumpai.</td></tr>';
+        tbody.innerHTML = '<tr class="empty-row"><td colspan="8"><i class="fas fa-inbox"></i> Tiada pelajar dijumpai.</td></tr>';
         return;
     }
 
@@ -271,18 +297,21 @@ async function renderStudentTable(filter = '', halaqahId = '', status = '') {
             ? `<span class="badge badge-gold"><i class="fas fa-triangle-exclamation"></i> Amaran</span>`
             : s.status === 'behind'
             ? `<span class="badge badge-r"><i class="fas fa-circle-exclamation"></i> Ketinggalan</span>`
+            : s.status === 'no_form'
+            ? `<span class="badge" style="color:var(--s400);border-color:var(--s200);">Tiada Tingkatan</span>`
             : `<span class="badge" style="color:var(--s400);border-color:var(--s200);">Tiada RPT</span>`;
         return `
         <tr>
           <td><div class="td-name"><div class="av-sm">${(s.full_name||'?')[0]}</div>${s.full_name}</div></td>
           <td>${s.halaqah_name || '<span style="color:var(--s400);">–</span>'}</td>
+          <td class="font-mono">${s.form_level ? `T${s.form_level}` : '<span style="color:var(--s400);">–</span>'}</td>
           <td class="font-mono">${s.current_page}</td>
           <td class="font-mono">${s.target_page_total || '<span style="color:var(--s400);">–</span>'}</td>
           <td class="${hClass} font-mono">${h > 0 ? '+'+h : h}</td>
           <td>${badge}</td>
           <td>
             <div style="display:flex;gap:6px;">
-              <button class="btn-sm btn-edit" onclick="openEditStudentModal(${s.id},'${(s.full_name||'').replace(/'/g,"\\'")}',${s.current_page},${s.current_juz||1},${s.halaqah_id||'null'})">
+              <button class="btn-sm btn-edit" onclick="openEditStudentModal(${s.id},'${(s.full_name||'').replace(/'/g,"\\'")}',${s.current_page},${s.current_juz||1},${s.halaqah_id||'null'},${s.form_level||'null'})">
                 <i class="fas fa-pen"></i>
               </button>
               <button class="btn-sm btn-danger" onclick="deleteStudent(${s.id})">
@@ -295,8 +324,8 @@ async function renderStudentTable(filter = '', halaqahId = '', status = '') {
 }
 
 function exportStudentsCSV() {
-    const rows = [['Nama','Halaqah','Muka Surat','Juzuk','Hutang','Status']];
-    allStudents.forEach(s => rows.push([s.full_name, s.halaqah_name||'', s.current_page, s.current_juz||'', s.hutang??'', s.status||'']));
+    const rows = [['Nama','Halaqah','Tingkatan','Muka Surat','Juzuk','Hutang','Status']];
+    allStudents.forEach(s => rows.push([s.full_name, s.halaqah_name||'', s.form_level||'', s.current_page, s.current_juz||'', s.hutang??'', s.status||'']));
     const csv = rows.map(r => r.map(c => `"${c}"`).join(',')).join('\n');
     const a = document.createElement('a');
     a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
@@ -313,7 +342,10 @@ async function loadHalaqahGrid() {
     if (!grid) return;
     grid.innerHTML = '<div class="empty-msg"><i class="fas fa-spinner fa-spin"></i></div>';
 
-    const { data, error } = await supabase.from('halaqahs').select('id, name, teacher_id, room, session_time, profiles(full_name)').eq('is_active', true).order('name');
+    const { data, error } = await supabase
+        .from('halaqahs')
+        .select('id, name, teacher_id, room, session_time, profiles(full_name)')
+        .eq('is_active', true).order('name');
     allHalaqahs = data || [];
 
     if (error || !data?.length) {
@@ -321,7 +353,6 @@ async function loadHalaqahGrid() {
         return;
     }
 
-    // Get student counts
     const { data: counts } = await supabase.from('students').select('halaqah_id').eq('is_active', true);
     const countMap = {};
     (counts || []).forEach(r => { countMap[r.halaqah_id] = (countMap[r.halaqah_id] || 0) + 1; });
@@ -349,14 +380,13 @@ async function loadHalaqahGrid() {
 }
 
 function openHalaqahModal(id = null, name = '', teacherId = '', room = '', time = '') {
-    document.getElementById('editHalaqahId').value = id || '';
+    document.getElementById('editHalaqahId').value   = id || '';
     document.getElementById('editHalaqahName').value = name;
     document.getElementById('editHalaqahRoom').value = room;
     document.getElementById('editHalaqahTime').value = time;
     document.getElementById('halaqahModalTitle').innerHTML =
         `<i class="fas fa-circle-nodes" style="color:var(--g);margin-right:8px;font-size:15px;"></i>${id ? 'Kemaskini Halaqah' : 'Tambah Halaqah Baru'}`;
 
-    // Pre-select teacher using allTeachers already loaded (no email field)
     const sel = document.getElementById('editHalaqahTeacher');
     const currentTeacherId = String(teacherId || '');
     sel.innerHTML = '<option value="">-- Pilih Murabbi --</option>' +
@@ -366,16 +396,15 @@ function openHalaqahModal(id = null, name = '', teacherId = '', room = '', time 
 }
 
 async function submitHalaqahModal() {
-    const id = document.getElementById('editHalaqahId').value;
-    const name = document.getElementById('editHalaqahName').value.trim();
+    const id        = document.getElementById('editHalaqahId').value;
+    const name      = document.getElementById('editHalaqahName').value.trim();
     const teacherId = document.getElementById('editHalaqahTeacher').value;
-    const room = document.getElementById('editHalaqahRoom').value.trim();
-    const time = document.getElementById('editHalaqahTime').value.trim();
+    const room      = document.getElementById('editHalaqahRoom').value.trim();
+    const time      = document.getElementById('editHalaqahTime').value.trim();
 
     if (!name) { showToast('Sila masukkan nama halaqah.', 'error'); return; }
 
     const payload = { name, teacher_id: teacherId || null, room: room || null, session_time: time || null };
-
     const { error } = id
         ? await supabase.from('halaqahs').update(payload).eq('id', id)
         : await supabase.from('halaqahs').insert(payload);
@@ -413,7 +442,6 @@ async function loadTeachersTable() {
         return;
     }
 
-    // Get halaqah assignments
     const { data: halaqahs } = await supabase.from('halaqahs').select('teacher_id, name').eq('is_active', true);
     const hMap = {};
     (halaqahs || []).forEach(h => { hMap[h.teacher_id] = h.name; });
@@ -484,21 +512,25 @@ async function removeUser(id, name) {
 }
 
 // ============================================================
-// STUDENT EDIT MODAL
+// STUDENT EDIT MODAL (now includes form_level)
 // ============================================================
 
-async function openEditStudentModal(id, name, page, juz, halaqahId) {
-    document.getElementById('editStudentId').value = id;
+async function openEditStudentModal(id, name, page, juz, halaqahId, formLevel) {
+    document.getElementById('editStudentId').value   = id;
     document.getElementById('editStudentName').value = name;
     document.getElementById('editStudentPage').value = page;
-    document.getElementById('editStudentJuz').value = juz;
+    document.getElementById('editStudentJuz').value  = juz;
 
-    // Halaqah dropdown
+    const selF = document.getElementById('editStudentForm');
+    if (selF) {
+        selF.innerHTML = '<option value="">– Tiada Tingkatan –</option>' +
+            [1,2,3,4,5].map(f => `<option value="${f}" ${f == formLevel ? 'selected' : ''}>Tingkatan ${f}</option>`).join('');
+    }
+
     const selH = document.getElementById('editStudentHalaqah');
     selH.innerHTML = '<option value="">-- Pilih Halaqah --</option>' +
         allHalaqahs.map(h => `<option value="${h.id}" ${h.id == halaqahId ? 'selected' : ''}>${h.name}</option>`).join('');
 
-    // Parent dropdown with pre-selection
     const { data: student } = await supabase.from('students').select('parent_id').eq('id', id).single();
     const selP = document.getElementById('editStudentParent');
     selP.innerHTML = '<option value="">-- Tiada Wali --</option>' +
@@ -508,17 +540,25 @@ async function openEditStudentModal(id, name, page, juz, halaqahId) {
 }
 
 async function submitEditStudent() {
-    const id = document.getElementById('editStudentId').value;
-    const name = document.getElementById('editStudentName').value.trim();
-    const page = parseInt(document.getElementById('editStudentPage').value);
-    const juz = parseInt(document.getElementById('editStudentJuz').value);
-    const parentId = document.getElementById('editStudentParent').value || null;
+    const id        = document.getElementById('editStudentId').value;
+    const name      = document.getElementById('editStudentName').value.trim();
+    const page      = parseInt(document.getElementById('editStudentPage').value);
+    const juz       = parseInt(document.getElementById('editStudentJuz').value);
+    const parentId  = document.getElementById('editStudentParent').value || null;
     const halaqahId = document.getElementById('editStudentHalaqah').value || null;
+    const formLevel = document.getElementById('editStudentForm')?.value   || null;
 
     if (!name || !page || !juz) { showToast('Sila isi semua medan wajib.', 'error'); return; }
 
     const { error } = await supabase.from('students')
-        .update({ full_name: name, current_page: page, current_juz: juz, parent_id: parentId, halaqah_id: halaqahId ? parseInt(halaqahId) : null })
+        .update({
+            full_name:    name,
+            current_page: page,
+            current_juz:  juz,
+            parent_id:    parentId,
+            halaqah_id:   halaqahId  ? parseInt(halaqahId)  : null,
+            form_level:   formLevel  ? parseInt(formLevel)  : null,
+        })
         .eq('id', id);
 
     if (error) { showToast('Ralat: ' + error.message, 'error'); return; }
@@ -538,53 +578,225 @@ async function deleteStudent(id) {
 }
 
 // ============================================================
-// RPT EDITOR
+// RPT MANAGER — 3 sections: Plans | Holidays | Overrides
 // ============================================================
 
-async function loadRPTEditor() {
-    const { data } = await supabase.from('rpt_targets').select('*').gte('date', getTodayDate()).order('date').limit(60);
-    const tbody = document.getElementById('rptTableBody');
-    if (!tbody) return;
+async function loadRPTManager() {
+    await Promise.all([
+        loadRPTPlans(),
+        loadHolidayList(),
+        loadRPTOverrides(),
+    ]);
+}
 
-    if (!data?.length) {
-        tbody.innerHTML = '<tr class="empty-row"><td colspan="5">Tiada rekod. Tambah sasaran baharu.</td></tr>';
+// --- SECTION 1: RPT PLANS ---
+
+async function loadRPTPlans() {
+    const el = document.getElementById('rptPlanList');
+    if (!el) return;
+    el.innerHTML = '<div class="empty-msg"><i class="fas fa-spinner fa-spin"></i></div>';
+
+    const year = new Date().getFullYear();
+    const { data, error } = await supabase
+        .from('rpt_plans').select('*').eq('year', year).order('form_level');
+
+    if (error || !data?.length) {
+        el.innerHTML = '<div class="empty-msg">Tiada pelan RPT untuk tahun ini. Tambah pelan baharu di bawah.</div>';
         return;
     }
 
-    tbody.innerHTML = data.map(r => `
-        <tr>
-          <td class="font-mono" style="font-size:12.5px;">${formatDateMY(r.date)}</td>
-          <td><input type="number" class="rpt-input" data-id="${r.id}" value="${r.target_page_total}" min="1" max="604" /></td>
-          <td><input type="number" class="rpt-input" data-id="${r.id}-juz" value="${r.juz_reference||''}" min="1" max="30" placeholder="–" style="width:60px;" /></td>
-          <td style="font-size:12px;color:var(--s500);">${r.notes||'–'}</td>
-          <td>
-            <div style="display:flex;gap:6px;">
-              <button class="btn-sm btn-success btn-save-rpt" data-id="${r.id}"><i class="fas fa-floppy-disk"></i></button>
-              <button class="btn-sm btn-danger btn-del-rpt" data-id="${r.id}"><i class="fas fa-trash"></i></button>
+    el.innerHTML = data.map(p => {
+        const totalPages = p.end_page - p.start_page;
+        const juzLabel   = p.juz_end ? `Juz ${p.juz_start} – Juz ${p.juz_end}` : `ms. ${p.start_page} – ${p.end_page}`;
+        return `
+        <div class="rpt-plan-card">
+          <div class="rpt-plan-badge">T${p.form_level}</div>
+          <div class="rpt-plan-info">
+            <div class="rpt-plan-title">Tingkatan ${p.form_level} &mdash; ${juzLabel}</div>
+            <div class="rpt-plan-meta">
+              <i class="fas fa-book-open"></i> ${totalPages} ms &nbsp;·&nbsp;
+              <i class="fas fa-calendar-range"></i> ${formatDateMY(p.start_date)} – ${formatDateMY(p.end_date)}
+              ${p.notes ? `&nbsp;·&nbsp;<i class="fas fa-note-sticky"></i> ${p.notes}` : ''}
             </div>
+          </div>
+          <div style="display:flex;gap:6px;flex-shrink:0;">
+            <button class="btn-sm btn-edit" onclick="openRPTPlanModal(${p.id},${p.form_level},${p.year},${p.start_page},${p.end_page},'${p.start_date}','${p.end_date}',${p.juz_start||'null'},${p.juz_end||'null'})">
+              <i class="fas fa-pen"></i>
+            </button>
+            <button class="btn-sm btn-danger" onclick="deleteRPTPlan(${p.id})">
+              <i class="fas fa-trash"></i>
+            </button>
+          </div>
+        </div>`;
+    }).join('');
+}
+
+function openRPTPlanModal(id=null, form=1, year=null, startPage=1, endPage=20, startDate='', endDate='', juzStart=null, juzEnd=null) {
+    const currentYear = new Date().getFullYear();
+    document.getElementById('planId').value        = id || '';
+    document.getElementById('planYear').value      = year || currentYear;
+    document.getElementById('planStartDate').value = startDate || `${currentYear}-01-06`;
+    document.getElementById('planEndDate').value   = endDate   || `${currentYear}-11-14`;
+    document.getElementById('planNotes').value     = '';
+    document.getElementById('planStartPage').value = startPage;
+    document.getElementById('planEndPage').value   = endPage;
+
+    const selF = document.getElementById('planForm');
+    if (selF) selF.value = form;
+
+    const selJs = document.getElementById('planJuzStart');
+    const selJe = document.getElementById('planJuzEnd');
+    if (selJs && selJe) {
+        const opts = Array.from({length:30},(_,i)=>i+1)
+            .map(j => `<option value="${j}">Juz ${j}</option>`).join('');
+        selJs.innerHTML = opts;
+        selJe.innerHTML = opts;
+        selJs.value = juzStart || 1;
+        selJe.value = juzEnd   || 1;
+        selJs.onchange = syncPagesFromJuz;
+        selJe.onchange = syncPagesFromJuz;
+        if (juzStart) syncPagesFromJuz();
+    }
+
+    document.getElementById('rptPlanModalTitle').textContent = id ? 'Kemaskini Pelan RPT' : 'Tambah Pelan RPT Baru';
+    openModal('rptPlanModal');
+}
+
+function syncPagesFromJuz() {
+    const js = parseInt(document.getElementById('planJuzStart')?.value);
+    const je = parseInt(document.getElementById('planJuzEnd')?.value);
+    if (js) document.getElementById('planStartPage').value = juzToStartPage(js);
+    if (je) document.getElementById('planEndPage').value   = juzToEndPage(je);
+}
+
+async function submitRPTPlanModal() {
+    const id        = document.getElementById('planId').value;
+    const form      = parseInt(document.getElementById('planForm').value);
+    const year      = parseInt(document.getElementById('planYear').value);
+    const startPage = parseInt(document.getElementById('planStartPage').value);
+    const endPage   = parseInt(document.getElementById('planEndPage').value);
+    const startDate = document.getElementById('planStartDate').value;
+    const endDate   = document.getElementById('planEndDate').value;
+    const juzStart  = document.getElementById('planJuzStart')?.value ? parseInt(document.getElementById('planJuzStart').value) : null;
+    const juzEnd    = document.getElementById('planJuzEnd')?.value   ? parseInt(document.getElementById('planJuzEnd').value)   : null;
+    const notes     = document.getElementById('planNotes')?.value.trim() || null;
+
+    if (!form || !year || !startPage || !endPage || !startDate || !endDate) {
+        showToast('Sila lengkapkan semua medan wajib.', 'error'); return;
+    }
+    if (endPage <= startPage) { showToast('Muka surat akhir mesti lebih besar.', 'error'); return; }
+    if (endDate <= startDate)  { showToast('Tarikh akhir mesti selepas tarikh mula.', 'error'); return; }
+
+    const payload = {
+        form_level: form, year,
+        start_page: startPage, end_page: endPage,
+        start_date: startDate, end_date: endDate,
+        juz_start: juzStart, juz_end: juzEnd, notes,
+        created_by: AppState.profile.id,
+    };
+
+    const { error } = id
+        ? await supabase.from('rpt_plans').update(payload).eq('id', id)
+        : await supabase.from('rpt_plans').upsert(payload, { onConflict: 'form_level,year' });
+
+    if (error) { showToast('Ralat: ' + error.message, 'error'); return; }
+    showToast(id ? 'Pelan RPT dikemaskini!' : 'Pelan RPT berjaya ditambah!', 'success');
+    closeModal('rptPlanModal');
+    loadRPTPlans();
+}
+
+async function deleteRPTPlan(id) {
+    if (!confirm('Padam pelan RPT ini? Sasaran automatik untuk tingkatan ini akan hilang.')) return;
+    const { error } = await supabase.from('rpt_plans').delete().eq('id', id);
+    if (error) { showToast('Ralat: ' + error.message, 'error'); return; }
+    showToast('Pelan RPT dipadam.', 'success');
+    loadRPTPlans();
+}
+
+// --- SECTION 2: SCHOOL HOLIDAYS ---
+
+async function loadHolidayList() {
+    const el = document.getElementById('holidayList');
+    if (!el) return;
+    el.innerHTML = '<tr class="empty-row"><td colspan="4"><i class="fas fa-spinner fa-spin"></i></td></tr>';
+
+    const year = new Date().getFullYear();
+    const { data } = await supabase
+        .from('school_holidays')
+        .select('*')
+        .gte('date', `${year}-01-01`)
+        .lte('date', `${year}-12-31`)
+        .order('date');
+
+    if (!data?.length) {
+        el.innerHTML = '<tr class="empty-row"><td colspan="4">Tiada cuti berdaftar untuk tahun ini.</td></tr>';
+        return;
+    }
+
+    const typeLabel = { public_holiday: 'Cuti Umum', school_holiday: 'Cuti Sekolah' };
+    const typeCls   = { public_holiday: 'badge-r',   school_holiday: 'badge-gold' };
+
+    el.innerHTML = data.map(h => `
+        <tr>
+          <td class="font-mono" style="font-size:12.5px;">${formatDateMY(h.date)}</td>
+          <td>${h.description}</td>
+          <td><span class="badge ${typeCls[h.holiday_type]}">${typeLabel[h.holiday_type]}</span></td>
+          <td>
+            <button class="btn-sm btn-danger" onclick="deleteHoliday(${h.id})">
+              <i class="fas fa-trash"></i>
+            </button>
           </td>
         </tr>`).join('');
+}
 
-    tbody.querySelectorAll('.btn-save-rpt').forEach(btn => {
-        btn.addEventListener('click', async () => {
-            const id = btn.dataset.id;
-            const page = tbody.querySelector(`.rpt-input[data-id="${id}"]`).value;
-            const juz = tbody.querySelector(`.rpt-input[data-id="${id}-juz"]`).value;
-            const { error } = await supabase.from('rpt_targets').update({ target_page_total: parseInt(page), juz_reference: juz ? parseInt(juz) : null }).eq('id', id);
-            if (error) { showToast('Ralat: ' + error.message, 'error'); return; }
-            showToast('RPT dikemaskini!', 'success');
-        });
-    });
+async function deleteHoliday(id) {
+    if (!confirm('Padam cuti ini?')) return;
+    const { error } = await supabase.from('school_holidays').delete().eq('id', id);
+    if (error) { showToast('Ralat: ' + error.message, 'error'); return; }
+    showToast('Cuti dipadam.', 'success');
+    loadHolidayList();
+}
 
-    tbody.querySelectorAll('.btn-del-rpt').forEach(btn => {
-        btn.addEventListener('click', async () => {
-            if (!confirm('Padam sasaran RPT ini?')) return;
-            const { error } = await supabase.from('rpt_targets').delete().eq('id', btn.dataset.id);
-            if (error) { showToast('Ralat: ' + error.message, 'error'); return; }
-            showToast('RPT dipadam.', 'success');
-            loadRPTEditor();
-        });
-    });
+// --- SECTION 3: MANUAL OVERRIDES ---
+
+async function loadRPTOverrides() {
+    const el = document.getElementById('rptOverrideList');
+    if (!el) return;
+    el.innerHTML = '<tr class="empty-row"><td colspan="5"><i class="fas fa-spinner fa-spin"></i></td></tr>';
+
+    const { data } = await supabase
+        .from('rpt_targets')
+        .select('*')
+        .gte('date', getTodayDate())
+        .order('date')
+        .order('form_level')
+        .limit(40);
+
+    if (!data?.length) {
+        el.innerHTML = '<tr class="empty-row"><td colspan="5">Tiada penggantian manual. Sistem menggunakan pengiraan automatik.</td></tr>';
+        return;
+    }
+
+    el.innerHTML = data.map(r => `
+        <tr>
+          <td class="font-mono" style="font-size:12.5px;">${formatDateMY(r.date)}</td>
+          <td>${r.form_level ? `Tingkatan ${r.form_level}` : '<span style="color:var(--s400);">Semua</span>'}</td>
+          <td class="font-mono">${r.target_page_total}</td>
+          <td style="font-size:12px;color:var(--s500);">${r.notes || '–'}</td>
+          <td>
+            <button class="btn-sm btn-danger" onclick="deleteRPTOverride(${r.id})">
+              <i class="fas fa-trash"></i>
+            </button>
+          </td>
+        </tr>`).join('');
+}
+
+async function deleteRPTOverride(id) {
+    if (!confirm('Padam penggantian ini? Sistem akan kembali ke pengiraan automatik.')) return;
+    const { error } = await supabase.from('rpt_targets').delete().eq('id', id);
+    if (error) { showToast('Ralat: ' + error.message, 'error'); return; }
+    showToast('Penggantian dipadam.', 'success');
+    loadRPTOverrides();
 }
 
 // ============================================================
@@ -595,7 +807,6 @@ async function loadAnnouncements() {
     const { data } = await supabase.from('announcements').select('*').order('created_at', { ascending: false }).limit(20);
     const el = document.getElementById('announcementList');
     if (!el) return;
-
     if (!data?.length) { el.innerHTML = '<div class="empty-msg">Tiada pengumuman lagi.</div>'; return; }
 
     const roleLabels = { teacher: 'Murabbi', parent: 'Wali', student: 'Pelajar' };
@@ -675,16 +886,17 @@ function parseCSV(text) {
     const wrap = document.getElementById('previewTableWrap');
     wrap.innerHTML = `
         <table>
-          <thead><tr><th>#</th><th>Nama</th><th>Matrik</th><th>Halaqah</th><th>Emel Wali</th></tr></thead>
+          <thead><tr><th>#</th><th>Nama</th><th>Matrik</th><th>Tingkatan</th><th>Halaqah</th><th>Emel Wali</th></tr></thead>
           <tbody>${rows.slice(0, 10).map((r, i) => `
             <tr>
               <td>${i+1}</td>
-              <td>${r.full_name || '–'}</td>
-              <td>${r.matric_no || '–'}</td>
+              <td>${r.full_name    || '–'}</td>
+              <td>${r.matric_no   || '–'}</td>
+              <td>${r.form_level  || '–'}</td>
               <td>${r.halaqah_name || '–'}</td>
               <td>${r.parent_email || '–'}</td>
             </tr>`).join('')}
-          ${rows.length > 10 ? `<tr><td colspan="5" style="text-align:center;color:var(--s400);font-size:11px;">...dan ${rows.length-10} lagi</td></tr>` : ''}
+          ${rows.length > 10 ? `<tr><td colspan="6" style="text-align:center;color:var(--s400);font-size:11px;">...dan ${rows.length-10} lagi</td></tr>` : ''}
           </tbody>
         </table>`;
 }
@@ -702,7 +914,6 @@ async function importCSV() {
     btn.disabled = true;
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Mengimport...';
 
-    // Build lookup maps
     const halaqahMap = {};
     allHalaqahs.forEach(h => { halaqahMap[h.name.toLowerCase()] = h.id; });
 
@@ -715,7 +926,8 @@ async function importCSV() {
     for (const row of csvParsedRows) {
         if (!row.full_name) continue;
         const halaqahId = halaqahMap[(row.halaqah_name||'').toLowerCase()] || null;
-        const parentId = parentMap[(row.parent_email||'').toLowerCase()] || null;
+        const parentId  = parentMap[(row.parent_email||'').toLowerCase()]  || null;
+        const formLevel = row.form_level ? parseInt(row.form_level) : null;
 
         if (row.halaqah_name && !halaqahId) {
             errors.push(`"${row.full_name}": Halaqah "${row.halaqah_name}" tidak dijumpai`);
@@ -723,20 +935,17 @@ async function importCSV() {
         }
 
         const { error } = await supabase.from('students').insert({
-            full_name: row.full_name,
-            matric_no: row.matric_no || null,
-            halaqah_id: halaqahId,
-            parent_id: parentId,
+            full_name:    row.full_name,
+            matric_no:    row.matric_no  || null,
+            halaqah_id:   halaqahId,
+            parent_id:    parentId,
+            form_level:   formLevel,
             current_page: parseInt(row.current_page) || 1,
-            current_juz: parseInt(row.current_juz) || 1,
+            current_juz:  parseInt(row.current_juz)  || 1,
         });
 
-        if (error) {
-            errors.push(`"${row.full_name}": ${error.message}`);
-            failed++;
-        } else {
-            success++;
-        }
+        if (error) { errors.push(`"${row.full_name}": ${error.message}`); failed++; }
+        else { success++; }
     }
 
     btn.disabled = false;
@@ -753,15 +962,12 @@ async function importCSV() {
         resultEl.innerHTML = `<i class="fas fa-triangle-exclamation"></i> ${success} berjaya, ${failed} gagal.<br><small>${errors.slice(0,3).join('<br>')}</small>`;
     }
 
-    if (success > 0) {
-        allStudents = [];
-        showToast(`${success} pelajar berjaya diimport!`, 'success');
-    }
+    if (success > 0) { allStudents = []; showToast(`${success} pelajar berjaya diimport!`, 'success'); }
 }
 
 function downloadCSVTemplate(e) {
     e.preventDefault();
-    const csv = 'full_name,matric_no,halaqah_name,parent_email,current_page,current_juz\nAhmad Faris,MT2025001,Halaqah Al-Baqarah,abu@email.com,1,1\nSiti Aisyah,MT2025002,Halaqah Al-Fatihah,ali@email.com,20,1';
+    const csv = 'full_name,matric_no,form_level,halaqah_name,parent_email,current_page,current_juz\nAhmad Faris,MT2025001,1,Halaqah Al-Baqarah,abu@email.com,1,1\nSiti Aisyah,MT2025002,2,Halaqah Al-Fatihah,ali@email.com,20,1';
     const a = document.createElement('a');
     a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
     a.download = 'template-pelajar.csv';
@@ -808,9 +1014,9 @@ function bindForms() {
     document.getElementById('formHalaqah')?.addEventListener('submit', async e => {
         e.preventDefault();
         const { error } = await supabase.from('halaqahs').insert({
-            name: document.getElementById('halaqahName').value.trim(),
-            teacher_id: document.getElementById('halaqahTeacher').value || null,
-            room: document.getElementById('halaqahRoom').value.trim() || null,
+            name:         document.getElementById('halaqahName').value.trim(),
+            teacher_id:   document.getElementById('halaqahTeacher').value || null,
+            room:         document.getElementById('halaqahRoom').value.trim() || null,
             session_time: document.getElementById('halaqahTime').value.trim() || null,
         });
         if (error) { showToast('Ralat: ' + error.message, 'error'); return; }
@@ -821,13 +1027,15 @@ function bindForms() {
 
     document.getElementById('formStudent')?.addEventListener('submit', async e => {
         e.preventDefault();
+        const formLevel = document.getElementById('studentForm')?.value;
         const { error } = await supabase.from('students').insert({
-            full_name: document.getElementById('studentName').value.trim(),
-            matric_no: document.getElementById('studentMatric').value.trim() || null,
-            halaqah_id: document.getElementById('studentHalaqah').value ? parseInt(document.getElementById('studentHalaqah').value) : null,
-            parent_id: document.getElementById('studentParent').value || null,
+            full_name:    document.getElementById('studentName').value.trim(),
+            matric_no:    document.getElementById('studentMatric').value.trim() || null,
+            halaqah_id:   document.getElementById('studentHalaqah').value ? parseInt(document.getElementById('studentHalaqah').value) : null,
+            parent_id:    document.getElementById('studentParent').value || null,
+            form_level:   formLevel ? parseInt(formLevel) : null,
             current_page: parseInt(document.getElementById('studentPage').value) || 1,
-            current_juz: 1,
+            current_juz:  1,
         });
         if (error) { showToast('Ralat: ' + error.message, 'error'); return; }
         showToast('Pelajar berjaya didaftarkan!', 'success');
@@ -836,31 +1044,60 @@ function bindForms() {
         allStudents = [];
     });
 
-    document.getElementById('formAddRPT')?.addEventListener('submit', async e => {
+    // RPT Plan modal form
+    document.getElementById('formAddRPTPlan')?.addEventListener('submit', async e => {
         e.preventDefault();
-        const { error } = await supabase.from('rpt_targets').upsert({
-            date: document.getElementById('rptDate').value,
-            target_page_total: parseInt(document.getElementById('rptPage').value),
-            juz_reference: document.getElementById('rptJuz').value ? parseInt(document.getElementById('rptJuz').value) : null,
-            notes: document.getElementById('rptNote').value.trim() || null,
-            created_by: AppState.profile.id,
-        });
-        if (error) { showToast('Ralat: ' + error.message, 'error'); return; }
-        showToast('Sasaran RPT disimpan!', 'success');
-        e.target.reset();
-        document.getElementById('rptDate').value = getTodayDate();
-        loadRPTEditor();
+        await submitRPTPlanModal();
     });
 
+    // Holiday form
+    document.getElementById('formAddHoliday')?.addEventListener('submit', async e => {
+        e.preventDefault();
+        const date = document.getElementById('holidayDate').value;
+        const desc = document.getElementById('holidayDesc').value.trim();
+        const type = document.getElementById('holidayType').value;
+        if (!date || !desc) { showToast('Sila isi tarikh dan keterangan.', 'error'); return; }
+        const { error } = await supabase.from('school_holidays').upsert({
+            date, description: desc, holiday_type: type,
+            created_by: AppState.profile.id,
+        }, { onConflict: 'date' });
+        if (error) { showToast('Ralat: ' + error.message, 'error'); return; }
+        showToast('Cuti berjaya ditambah!', 'success');
+        e.target.reset();
+        loadHolidayList();
+    });
+
+    // RPT Override form
+    document.getElementById('formAddRPTOverride')?.addEventListener('submit', async e => {
+        e.preventDefault();
+        const date      = document.getElementById('overrideDate').value;
+        const formLevel = document.getElementById('overrideForm').value;
+        const page      = document.getElementById('overridePage').value;
+        const notes     = document.getElementById('overrideNote').value.trim();
+        if (!date || !page) { showToast('Sila isi tarikh dan muka surat sasaran.', 'error'); return; }
+        const { error } = await supabase.from('rpt_targets').upsert({
+            date,
+            form_level:        formLevel ? parseInt(formLevel) : null,
+            target_page_total: parseInt(page),
+            notes:             notes || null,
+            created_by:        AppState.profile.id,
+        }, { onConflict: 'date,form_level' });
+        if (error) { showToast('Ralat: ' + error.message, 'error'); return; }
+        showToast('Penggantian RPT disimpan!', 'success');
+        e.target.reset();
+        loadRPTOverrides();
+    });
+
+    // Announcement form
     document.getElementById('formAnnouncement')?.addEventListener('submit', async e => {
         e.preventDefault();
         const role = document.getElementById('annRole').value;
         const { error } = await supabase.from('announcements').insert({
-            title: document.getElementById('annTitle').value.trim(),
-            body: document.getElementById('annBody').value.trim(),
+            title:       document.getElementById('annTitle').value.trim(),
+            body:        document.getElementById('annBody').value.trim(),
             target_role: role || null,
-            created_by: AppState.profile.id,
-            is_active: true,
+            created_by:  AppState.profile.id,
+            is_active:   true,
         });
         if (error) { showToast('Ralat: ' + error.message, 'error'); return; }
         showToast('Pengumuman dihantar!', 'success');
@@ -868,33 +1105,31 @@ function bindForms() {
         loadAnnouncements();
     });
 
-    // Search & filter for students table
-    document.getElementById('studentSearch')?.addEventListener('input', applyStudentFilters);
+    // Student filters
+    document.getElementById('studentSearch')?.addEventListener('input',  applyStudentFilters);
     document.getElementById('halaqahFilter')?.addEventListener('change', applyStudentFilters);
-    document.getElementById('statusFilter')?.addEventListener('change', applyStudentFilters);
+    document.getElementById('statusFilter')?.addEventListener('change',  applyStudentFilters);
+    document.getElementById('formFilter')?.addEventListener('change',    applyStudentFilters);
 
-    // Logout
     document.getElementById('logoutBtn')?.addEventListener('click', logout);
-
-    // Init CSV upload
     initBatchUpload();
 }
 
 function applyStudentFilters() {
     const q = document.getElementById('studentSearch')?.value.toLowerCase() || '';
     const h = document.getElementById('halaqahFilter')?.value || '';
-    const s = document.getElementById('statusFilter')?.value || '';
-    renderStudentTable(q, h, s);
+    const s = document.getElementById('statusFilter')?.value  || '';
+    const f = document.getElementById('formFilter')?.value    || '';
+    renderStudentTable(q, h, s, f);
 }
 
 // ============================================================
 // MODAL HELPERS
 // ============================================================
 
-function openModal(id) { document.getElementById(id)?.classList.add('open'); }
+function openModal(id)  { document.getElementById(id)?.classList.add('open'); }
 function closeModal(id) { document.getElementById(id)?.classList.remove('open'); }
 
-// Close modals on backdrop click
 document.addEventListener('click', e => {
     if (e.target.classList.contains('modal-ov')) closeModal(e.target.id);
 });
@@ -914,20 +1149,26 @@ function showToast(msg, type = 'success') {
 // ============================================================
 // EXPORTS
 // ============================================================
-window.switchTab = switchTab;
-window.showToast = showToast;
-window.openModal = openModal;
-window.closeModal = closeModal;
-window.openHalaqahModal = openHalaqahModal;
-window.submitHalaqahModal = submitHalaqahModal;
-window.deleteHalaqah = deleteHalaqah;
-window.openEditStudentModal = openEditStudentModal;
-window.submitEditStudent = submitEditStudent;
-window.deleteStudent = deleteStudent;
-window.removeUser = removeUser;
-window.filterParentTable = filterParentTable;
-window.exportStudentsCSV = exportStudentsCSV;
-window.importCSV = importCSV;
-window.clearCSV = clearCSV;
-window.downloadCSVTemplate = downloadCSVTemplate;
-window.deleteAnnouncement = deleteAnnouncement;
+window.switchTab             = switchTab;
+window.showToast             = showToast;
+window.openModal             = openModal;
+window.closeModal            = closeModal;
+window.openHalaqahModal      = openHalaqahModal;
+window.submitHalaqahModal    = submitHalaqahModal;
+window.deleteHalaqah         = deleteHalaqah;
+window.openEditStudentModal  = openEditStudentModal;
+window.submitEditStudent     = submitEditStudent;
+window.deleteStudent         = deleteStudent;
+window.removeUser            = removeUser;
+window.filterParentTable     = filterParentTable;
+window.exportStudentsCSV     = exportStudentsCSV;
+window.importCSV             = importCSV;
+window.clearCSV              = clearCSV;
+window.downloadCSVTemplate   = downloadCSVTemplate;
+window.deleteAnnouncement    = deleteAnnouncement;
+window.openRPTPlanModal      = openRPTPlanModal;
+window.submitRPTPlanModal    = submitRPTPlanModal;
+window.deleteRPTPlan         = deleteRPTPlan;
+window.syncPagesFromJuz      = syncPagesFromJuz;
+window.deleteHoliday         = deleteHoliday;
+window.deleteRPTOverride     = deleteRPTOverride;
