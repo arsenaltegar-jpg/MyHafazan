@@ -771,9 +771,21 @@ async function loadHolidayList() {
     const typeLabel = { public_holiday: 'Cuti Umum', school_holiday: 'Cuti Sekolah' };
     const typeCls   = { public_holiday: 'badge-r',   school_holiday: 'badge-gold' };
 
-    el.innerHTML = data.map(h => `
+    el.innerHTML = data.map(h => {
+        const isSingleDay = h.date === h.end_date;
+        const dateDisplay = isSingleDay
+            ? formatDateMY(h.date)
+            : `${formatDateMY(h.date)} – ${formatDateMY(h.end_date)}`;
+        // Count weekdays in range for display
+        let weekdays = 0;
+        for (let d = new Date(h.date); d <= new Date(h.end_date); d.setDate(d.getDate() + 1)) {
+            const dow = d.getDay();
+            if (dow !== 0 && dow !== 6) weekdays++;
+        }
+        const daysNote = isSingleDay ? '' : ` <span style="font-size:11px;color:var(--s400);">(${weekdays} hari persekolahan)</span>`;
+        return `
         <tr>
-          <td class="font-mono" style="font-size:12.5px;">${formatDateMY(h.date)}</td>
+          <td class="font-mono" style="font-size:12.5px;">${dateDisplay}${daysNote}</td>
           <td>${h.description}</td>
           <td><span class="badge ${typeCls[h.holiday_type]}">${typeLabel[h.holiday_type]}</span></td>
           <td>
@@ -781,7 +793,8 @@ async function loadHolidayList() {
               <i class="fas fa-trash"></i>
             </button>
           </td>
-        </tr>`).join('');
+        </tr>`;
+    }).join('');
 }
 
 async function deleteHoliday(id) {
@@ -1088,14 +1101,16 @@ function bindForms() {
     // Holiday form
     document.getElementById('formAddHoliday')?.addEventListener('submit', async e => {
         e.preventDefault();
-        const date = document.getElementById('holidayDate').value;
-        const desc = document.getElementById('holidayDesc').value.trim();
-        const type = document.getElementById('holidayType').value;
+        const date    = document.getElementById('holidayDate').value;
+        const endDate = document.getElementById('holidayEndDate').value || date; // fallback = same day
+        const desc    = document.getElementById('holidayDesc').value.trim();
+        const type    = document.getElementById('holidayType').value;
         if (!date || !desc) { showToast('Sila isi tarikh dan keterangan.', 'error'); return; }
-        const { error } = await supabase.from('school_holidays').upsert({
-            date, description: desc, holiday_type: type,
+        if (endDate < date) { showToast('Tarikh akhir mesti sama atau selepas tarikh mula.', 'error'); return; }
+        const { error } = await supabase.from('school_holidays').insert({
+            date, end_date: endDate, description: desc, holiday_type: type,
             created_by: AppState.profile.id,
-        }, { onConflict: 'date' });
+        });
         if (error) { showToast('Ralat: ' + error.message, 'error'); return; }
         showToast('Cuti berjaya ditambah!', 'success');
         e.target.reset();
