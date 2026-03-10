@@ -54,7 +54,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--s100);color:var(--s800);m
   cursor:pointer;text-align:left;transition:all .15s;position:relative;
 }
 .nav-btn i{width:17px;text-align:center;font-size:14px;flex-shrink:0;}
-.nav-btn .badge-count{margin-left:auto;background:var(--r);color:white;font-size:10px;font-weight:700;border-radius:20px;padding:1px 7px;min-width:20px;text-align:center;}
 .nav-btn:hover{color:white;background:rgba(255,255,255,.05);}
 .nav-btn.active{color:white;background:rgba(107,33,168,.35);}
 .nav-btn.active::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--pg);border-radius:0 3px 3px 0;}
@@ -224,8 +223,7 @@ tbody td{padding:11px 14px;font-size:13.5px;color:var(--s700);}
 .halaqah-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;}
 .halaqah-card{
   background:white;border-radius:var(--radius);border:1px solid var(--s200);
-  padding:18px 20px;display:flex;align-items:center;gap:14px;
-  transition:.2s;
+  padding:18px 20px;display:flex;align-items:center;gap:14px;transition:.2s;
 }
 .halaqah-card:hover{box-shadow:0 4px 16px rgba(0,0,0,.08);border-color:var(--s300);}
 .hq-icon{width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,var(--p),var(--pl));color:white;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
@@ -235,16 +233,42 @@ tbody td{padding:11px 14px;font-size:13.5px;color:var(--s700);}
 .hq-stats{font-size:11px;color:var(--s400);margin-top:4px;}
 .hq-actions{display:flex;gap:6px;flex-shrink:0;}
 
-/* ═══════ RPT ═══════ */
-.rpt-grid{display:grid;grid-template-columns:320px 1fr;gap:20px;align-items:start;}
-.rpt-input{width:80px;border:1.5px solid var(--s200);border-radius:7px;padding:6px 9px;font-size:13px;font-family:'DM Mono',monospace;text-align:center;color:var(--s800);outline:none;transition:.2s;}
-.rpt-input:focus{border-color:var(--pl);box-shadow:0 0 0 2px rgba(124,58,237,.09);}
+/* ═══════ RPT MODULE ═══════ */
+.rpt-tabs{display:flex;gap:4px;margin-bottom:20px;background:white;border:1px solid var(--s200);border-radius:12px;padding:5px;}
+.rpt-tab-btn{
+  flex:1;padding:9px 14px;border:none;border-radius:9px;
+  font-size:13px;font-weight:600;font-family:'DM Sans',sans-serif;
+  cursor:pointer;transition:.2s;color:var(--s500);background:none;
+  display:flex;align-items:center;justify-content:center;gap:7px;
+}
+.rpt-tab-btn:hover{background:var(--s100);color:var(--s700);}
+.rpt-tab-btn.active{background:linear-gradient(135deg,var(--p),var(--pl));color:white;box-shadow:0 2px 8px rgba(107,33,168,.3);}
+.rpt-tab-pane{display:none;}
+.rpt-tab-pane.active{display:block;}
+
+.rpt-plan-card{
+  display:flex;align-items:center;gap:14px;
+  padding:14px 18px;border:1px solid var(--s200);border-radius:12px;
+  background:white;margin-bottom:10px;transition:.2s;
+}
+.rpt-plan-card:hover{border-color:var(--pg);box-shadow:0 2px 12px rgba(107,33,168,.08);}
+.rpt-plan-badge{
+  width:42px;height:42px;border-radius:10px;flex-shrink:0;
+  background:linear-gradient(135deg,var(--p),var(--pl));
+  color:white;font-size:13px;font-weight:800;
+  display:flex;align-items:center;justify-content:center;
+  font-family:'DM Mono',monospace;
+}
+.rpt-plan-info{flex:1;min-width:0;}
+.rpt-plan-title{font-size:14px;font-weight:700;color:var(--s800);}
+.rpt-plan-meta{font-size:11.5px;color:var(--s500);margin-top:4px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+
+.rpt-section-grid{display:grid;grid-template-columns:340px 1fr;gap:20px;align-items:start;}
 
 /* ═══════ BATCH UPLOAD ═══════ */
 .drop-zone{
   border:2px dashed var(--s300);border-radius:var(--radius);
-  padding:32px 20px;text-align:center;cursor:pointer;transition:.2s;
-  background:var(--s50);
+  padding:32px 20px;text-align:center;cursor:pointer;transition:.2s;background:var(--s50);
 }
 .drop-zone:hover,.drop-zone.drag-over{border-color:var(--pl);background:var(--pp);}
 .drop-zone i{font-size:32px;color:var(--s400);margin-bottom:10px;display:block;}
@@ -291,6 +315,12 @@ tbody td{padding:11px 14px;font-size:13.5px;color:var(--s700);}
 .divider{height:1px;background:var(--s100);margin:16px 0;}
 .hidden{display:none!important;}
 .tag{display:inline-flex;align-items:center;padding:2px 9px;border-radius:6px;font-size:11px;font-weight:600;background:var(--s100);color:var(--s600);}
+.rpt-input{width:80px;border:1.5px solid var(--s200);border-radius:7px;padding:6px 9px;font-size:13px;font-family:'DM Mono',monospace;text-align:center;color:var(--s800);outline:none;transition:.2s;}
+.rpt-input:focus{border-color:var(--pl);box-shadow:0 0 0 2px rgba(124,58,237,.09);}
+
+/* info banner */
+.info-banner{background:var(--pp);border:1px solid rgba(107,33,168,.15);border-radius:10px;padding:11px 15px;font-size:12.5px;color:var(--pd);display:flex;align-items:flex-start;gap:9px;margin-bottom:18px;}
+.info-banner i{flex-shrink:0;margin-top:1px;color:var(--p);}
 
 /* ═══════ RESPONSIVE ═══════ */
 @media(max-width:900px){
@@ -302,87 +332,46 @@ tbody td{padding:11px 14px;font-size:13.5px;color:var(--s700);}
   .charts-row{grid-template-columns:1fr;}
   .bottom-row{grid-template-columns:1fr;}
   .mgmt-grid{grid-template-columns:1fr;}
-  .rpt-grid{grid-template-columns:1fr;}
+  .rpt-section-grid{grid-template-columns:1fr;}
+  .rpt-tabs{flex-wrap:wrap;}
+  .rpt-tab-btn{flex:none;flex:1 1 auto;}
 }
 @media(max-width:640px){
-  /* Sidebar overlay backdrop */
-  .sidebar.open::after{
-    content:'';position:fixed;inset:0;background:rgba(0,0,0,.5);
-    z-index:-1;
-  }
-
+  .sidebar.open::after{content:'';position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:-1;}
   .topbar{padding:0 14px;height:54px;}
   .tb-title{font-size:15px;}
   .tb-date{display:none;}
-  .tb-right .btn-secondary{display:none;} /* hide reload on mobile, save space */
-
+  .tb-right .btn-secondary{display:none;}
   .page{padding:14px 12px 80px;}
-
-  /* Stats: 2 cols */
   .stats-row{grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
   .stat-card{padding:14px 14px;gap:10px;}
   .stat-icon{width:38px;height:38px;font-size:15px;}
   .stat-val{font-size:22px;}
   .stat-lbl{font-size:10px;}
-
-  /* Page headers */
   .page-hd{flex-direction:column;align-items:flex-start;gap:10px;}
   .page-hd .btn-primary{width:100%;justify-content:center;}
-
-  /* Tables: horizontal scroll + smaller text */
   .table-wrap{-webkit-overflow-scrolling:touch;}
   table{min-width:520px;}
   thead th{padding:9px 10px;font-size:10px;}
   tbody td{padding:9px 10px;font-size:12px;}
-
-  /* Toolbar filters stack */
   .toolbar{gap:8px;}
   .filter-select{flex:1;min-width:0;font-size:12px;padding:8px 8px;}
   .toolbar .btn-secondary{width:100%;justify-content:center;}
-
-  /* Management grid already 1col, tighten padding */
   .mgmt-card-body{padding:14px 16px;}
   .mgmt-card-hd{padding:13px 16px;}
-
-  /* Halaqah grid 1 col */
   .halaqah-grid{grid-template-columns:1fr;}
-
-  /* Batch CSV grid -> 1 col */
-  #pane-batch [style*="grid-template-columns:1fr 1fr"]{
-    display:block!important;
-  }
-  #pane-batch [style*="grid-template-columns:1fr 1fr"] > *{
-    margin-bottom:14px;
-  }
-
-  /* Announcements grid -> 1 col */
-  #pane-announcements [style*="grid-template-columns:380px"]{
-    display:block!important;
-  }
-  #pane-announcements [style*="grid-template-columns:380px"] > *{
-    margin-bottom:14px;
-  }
-
-  /* RPT editor already 1col */
-  .rpt-input{width:70px;}
-
-  /* Modal full width */
+  #pane-batch [style*="grid-template-columns:1fr 1fr"]{display:block!important;}
+  #pane-batch [style*="grid-template-columns:1fr 1fr"] > *{margin-bottom:14px;}
+  #pane-announcements [style*="grid-template-columns:380px"]{display:block!important;}
+  #pane-announcements [style*="grid-template-columns:380px"] > *{margin-bottom:14px;}
   .modal-ov{padding:0;align-items:flex-end;}
   .modal{border-radius:20px 20px 0 0;max-width:100%;max-height:92vh;padding:22px 18px;}
   @keyframes popIn{from{opacity:0;transform:translateY(60px)}to{opacity:1;transform:translateY(0)}}
-
-  /* Edit modal inner grid -> 1 col */
   .modal [style*="grid-template-columns:1fr 1fr"]{display:block!important;}
   .modal [style*="grid-template-columns:1fr 1fr"] .field{margin-bottom:14px;}
-
-  /* Inputs: 16px prevents iOS zoom */
   .field input,.field select,.field textarea,.search-wrap input,.filter-select{font-size:16px!important;}
-
-  /* Card headers */
   .card-hd{padding:14px 16px 0;}
   .card-body{padding:14px 16px;}
-
-  /* Bottom row charts */
   canvas{max-width:100%!important;}
 }
 @media(max-width:480px){
@@ -418,7 +407,7 @@ tbody td{padding:11px 14px;font-size:13.5px;color:var(--s700);}
     <button class="nav-btn" data-tab="batch"><i class="fas fa-file-arrow-up"></i> Muat Naik CSV</button>
 
     <div class="sb-section" style="margin-top:8px;">Sistem</div>
-    <button class="nav-btn" data-tab="rpt"><i class="fas fa-calendar-check"></i> Editor RPT</button>
+    <button class="nav-btn" data-tab="rpt"><i class="fas fa-calendar-check"></i> Pengurusan RPT</button>
     <button class="nav-btn" data-tab="announcements"><i class="fas fa-bullhorn"></i> Pengumuman</button>
   </div>
 
@@ -480,7 +469,7 @@ tbody td{padding:11px 14px;font-size:13.5px;color:var(--s700);}
           <div class="card-body" style="display:flex;flex-direction:column;align-items:center;gap:12px;">
             <canvas id="donutChart" width="200" height="200"></canvas>
             <div style="background:var(--s50);border-radius:10px;padding:12px 16px;width:100%;text-align:center;">
-              <div style="font-size:11px;color:var(--s400);margin-bottom:4px;">Sasaran RPT Hari Ini</div>
+              <div style="font-size:11px;color:var(--s400);margin-bottom:4px;">Pelan RPT Aktif Hari Ini</div>
               <div style="font-size:24px;font-weight:800;color:var(--s800);font-family:'DM Mono',monospace;" id="todayTarget">–</div>
               <div style="font-size:11px;color:var(--s500);margin-top:2px;" id="todayJuz"></div>
             </div>
@@ -520,6 +509,14 @@ tbody td{padding:11px 14px;font-size:13.5px;color:var(--s700);}
             <input type="text" id="studentSearch" placeholder="Cari nama, matrik..." />
           </div>
           <select class="filter-select" id="halaqahFilter"><option value="">Semua Halaqah</option></select>
+          <select class="filter-select" id="formFilter">
+            <option value="">Semua Tingkatan</option>
+            <option value="1">Tingkatan 1</option>
+            <option value="2">Tingkatan 2</option>
+            <option value="3">Tingkatan 3</option>
+            <option value="4">Tingkatan 4</option>
+            <option value="5">Tingkatan 5</option>
+          </select>
           <select class="filter-select" id="statusFilter">
             <option value="">Semua Status</option>
             <option value="ahead">Melebihi</option>
@@ -534,6 +531,7 @@ tbody td{padding:11px 14px;font-size:13.5px;color:var(--s700);}
               <tr>
                 <th>Pelajar</th>
                 <th>Halaqah</th>
+                <th>Tingkatan</th>
                 <th>Muka Semasa</th>
                 <th>Sasaran RPT</th>
                 <th>Hutang</th>
@@ -542,7 +540,7 @@ tbody td{padding:11px 14px;font-size:13.5px;color:var(--s700);}
               </tr>
             </thead>
             <tbody id="studentTableBody">
-              <tr class="empty-row"><td colspan="7"><i class="fas fa-spinner fa-spin"></i> Memuat...</td></tr>
+              <tr class="empty-row"><td colspan="8"><i class="fas fa-spinner fa-spin"></i> Memuat...</td></tr>
             </tbody>
           </table>
         </div>
@@ -574,7 +572,7 @@ tbody td{padding:11px 14px;font-size:13.5px;color:var(--s700);}
       <div class="card">
         <div class="table-wrap">
           <table>
-            <thead><tr><th>Nama</th><th>Emel</th><th>Halaqah</th><th>Tindakan</th></tr></thead>
+            <thead><tr><th>Nama</th><th>No. Telefon</th><th>Halaqah</th><th>Tindakan</th></tr></thead>
             <tbody id="teacherTableBody"><tr class="empty-row"><td colspan="4"><i class="fas fa-spinner fa-spin"></i></td></tr></tbody>
           </table>
         </div>
@@ -598,7 +596,7 @@ tbody td{padding:11px 14px;font-size:13.5px;color:var(--s700);}
         </div>
         <div class="table-wrap">
           <table>
-            <thead><tr><th>Nama</th><th>Emel</th><th>Bilangan Anak</th><th>Tindakan</th></tr></thead>
+            <thead><tr><th>Nama</th><th>No. Telefon</th><th>Bilangan Anak</th><th>Tindakan</th></tr></thead>
             <tbody id="parentTableBody"><tr class="empty-row"><td colspan="4"><i class="fas fa-spinner fa-spin"></i></td></tr></tbody>
           </table>
         </div>
@@ -619,10 +617,7 @@ tbody td{padding:11px 14px;font-size:13.5px;color:var(--s700);}
         <div class="mgmt-card">
           <div class="mgmt-card-hd">
             <div class="mgmt-hd-icon mhi-teacher"><i class="fas fa-chalkboard-user"></i></div>
-            <div>
-              <div class="mgmt-hd-text">Tambah Murabbi</div>
-              <div class="mgmt-hd-sub">Akaun log masuk akan diwujudkan</div>
-            </div>
+            <div><div class="mgmt-hd-text">Tambah Murabbi</div><div class="mgmt-hd-sub">Akaun log masuk akan diwujudkan</div></div>
           </div>
           <div class="mgmt-card-body">
             <form id="formTeacher">
@@ -638,10 +633,7 @@ tbody td{padding:11px 14px;font-size:13.5px;color:var(--s700);}
         <div class="mgmt-card">
           <div class="mgmt-card-hd">
             <div class="mgmt-hd-icon mhi-parent"><i class="fas fa-users"></i></div>
-            <div>
-              <div class="mgmt-hd-text">Tambah Wali Murid</div>
-              <div class="mgmt-hd-sub">Daftar dahulu sebelum pelajar</div>
-            </div>
+            <div><div class="mgmt-hd-text">Tambah Wali Murid</div><div class="mgmt-hd-sub">Daftar dahulu sebelum pelajar</div></div>
           </div>
           <div class="mgmt-card-body">
             <form id="formParent">
@@ -657,10 +649,7 @@ tbody td{padding:11px 14px;font-size:13.5px;color:var(--s700);}
         <div class="mgmt-card">
           <div class="mgmt-card-hd">
             <div class="mgmt-hd-icon mhi-halaqah"><i class="fas fa-circle-nodes"></i></div>
-            <div>
-              <div class="mgmt-hd-text">Buat Halaqah</div>
-              <div class="mgmt-hd-sub">Kumpulan hafazan baru</div>
-            </div>
+            <div><div class="mgmt-hd-text">Buat Halaqah</div><div class="mgmt-hd-sub">Kumpulan hafazan baru</div></div>
           </div>
           <div class="mgmt-card-body">
             <form id="formHalaqah">
@@ -677,15 +666,23 @@ tbody td{padding:11px 14px;font-size:13.5px;color:var(--s700);}
         <div class="mgmt-card">
           <div class="mgmt-card-hd">
             <div class="mgmt-hd-icon mhi-student"><i class="fas fa-user-graduate"></i></div>
-            <div>
-              <div class="mgmt-hd-text">Daftar Pelajar</div>
-              <div class="mgmt-hd-sub">Satu pelajar pada satu masa</div>
-            </div>
+            <div><div class="mgmt-hd-text">Daftar Pelajar</div><div class="mgmt-hd-sub">Satu pelajar pada satu masa</div></div>
           </div>
           <div class="mgmt-card-body">
             <form id="formStudent">
               <div class="field"><label>Nama Penuh Pelajar</label><input type="text" id="studentName" placeholder="Nama pelajar..." required /></div>
               <div class="field"><label>No. Matrik <span>(pilihan)</span></label><input type="text" id="studentMatric" placeholder="cth: MT2025001" /></div>
+              <div class="field">
+                <label>Tingkatan <span style="color:var(--p);font-size:10px;">← Penting untuk RPT</span></label>
+                <select id="studentForm">
+                  <option value="">– Pilih Tingkatan –</option>
+                  <option value="1">Tingkatan 1</option>
+                  <option value="2">Tingkatan 2</option>
+                  <option value="3">Tingkatan 3</option>
+                  <option value="4">Tingkatan 4</option>
+                  <option value="5">Tingkatan 5</option>
+                </select>
+              </div>
               <div class="field"><label>Halaqah</label><select id="studentHalaqah" class="sel-halaqah"></select></div>
               <div class="field"><label>Wali Murid <span style="color:var(--p);font-size:10px;">← Hubungkan di sini</span></label><select id="studentParent" class="sel-parent"></select></div>
               <div class="field"><label>Muka Surat Permulaan</label><input type="number" id="studentPage" value="1" min="1" max="604" /></div>
@@ -706,10 +703,7 @@ tbody td{padding:11px 14px;font-size:13.5px;color:var(--s700);}
         </div>
         <a id="downloadTemplate" class="btn-secondary" href="#" onclick="downloadCSVTemplate(event)"><i class="fas fa-file-arrow-down"></i> Muat Turun Template</a>
       </div>
-
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;">
-
-        <!-- Upload box -->
         <div class="card">
           <div class="card-hd"><div class="card-title"><i class="fas fa-file-csv"></i> Upload Fail CSV</div></div>
           <div class="card-body">
@@ -717,10 +711,9 @@ tbody td{padding:11px 14px;font-size:13.5px;color:var(--s700);}
               <i class="fas fa-cloud-arrow-up"></i>
               <div class="dz-title">Seret & lepas fail CSV di sini</div>
               <div class="dz-sub">atau <span class="dz-link">klik untuk pilih fail</span></div>
-              <div class="dz-sub" style="margin-top:4px;font-size:11px;color:var(--s400);">Format: full_name, matric_no, halaqah_name, parent_email</div>
+              <div class="dz-sub" style="margin-top:4px;font-size:11px;color:var(--s400);">Format: full_name, matric_no, form_level, halaqah_name, parent_email</div>
             </div>
             <input type="file" id="csvFile" accept=".csv" class="hidden" />
-
             <div id="csvPreview" class="hidden">
               <div style="display:flex;align-items:center;justify-content:space-between;margin-top:14px;margin-bottom:8px;">
                 <div style="font-size:13px;font-weight:600;color:var(--s700);" id="csvRowCount"></div>
@@ -734,39 +727,23 @@ tbody td{padding:11px 14px;font-size:13.5px;color:var(--s700);}
             <div id="batchResult" class="hidden"></div>
           </div>
         </div>
-
-        <!-- Instructions -->
         <div class="card">
           <div class="card-hd"><div class="card-title"><i class="fas fa-circle-info"></i> Panduan Format CSV</div></div>
           <div class="card-body">
             <div style="font-size:13px;color:var(--s600);line-height:1.8;">
               <p style="margin-bottom:12px;">Pastikan fail CSV anda mengikut format berikut:</p>
               <div style="background:var(--s900);border-radius:9px;padding:14px;font-family:'DM Mono',monospace;font-size:12px;color:#86efac;margin-bottom:14px;overflow-x:auto;">
-                full_name,matric_no,halaqah_name,parent_email<br>
-                Ahmad Faris,MT2025001,Halaqah Al-Baqarah,abu@email.com<br>
-                Siti Aisyah,MT2025002,Halaqah Al-Fatihah,ali@email.com
+                full_name,matric_no,form_level,halaqah_name,parent_email<br>
+                Ahmad Faris,MT2025001,1,Halaqah Al-Baqarah,abu@email.com<br>
+                Siti Aisyah,MT2025002,2,Halaqah Al-Fatihah,ali@email.com
               </div>
               <div style="display:flex;flex-direction:column;gap:8px;">
-                <div style="display:flex;gap:8px;align-items:flex-start;">
-                  <i class="fas fa-check-circle" style="color:var(--g);margin-top:2px;flex-shrink:0;"></i>
-                  <span><strong>full_name</strong> – Wajib. Nama penuh pelajar.</span>
-                </div>
-                <div style="display:flex;gap:8px;align-items:flex-start;">
-                  <i class="fas fa-check-circle" style="color:var(--g);margin-top:2px;flex-shrink:0;"></i>
-                  <span><strong>matric_no</strong> – Pilihan. No. matrik unik.</span>
-                </div>
-                <div style="display:flex;gap:8px;align-items:flex-start;">
-                  <i class="fas fa-check-circle" style="color:var(--g);margin-top:2px;flex-shrink:0;"></i>
-                  <span><strong>halaqah_name</strong> – Nama halaqah yang sedia ada dalam sistem.</span>
-                </div>
-                <div style="display:flex;gap:8px;align-items:flex-start;">
-                  <i class="fas fa-check-circle" style="color:var(--g);margin-top:2px;flex-shrink:0;"></i>
-                  <span><strong>parent_email</strong> – Emel wali yang sudah berdaftar dalam sistem.</span>
-                </div>
-                <div style="display:flex;gap:8px;align-items:flex-start;">
-                  <i class="fas fa-info-circle" style="color:var(--gold);margin-top:2px;flex-shrink:0;"></i>
-                  <span>Halaqah dan Wali perlu wujud dahulu dalam sistem sebelum import.</span>
-                </div>
+                <div style="display:flex;gap:8px;align-items:flex-start;"><i class="fas fa-check-circle" style="color:var(--g);margin-top:2px;flex-shrink:0;"></i><span><strong>full_name</strong> – Wajib.</span></div>
+                <div style="display:flex;gap:8px;align-items:flex-start;"><i class="fas fa-check-circle" style="color:var(--g);margin-top:2px;flex-shrink:0;"></i><span><strong>matric_no</strong> – Pilihan.</span></div>
+                <div style="display:flex;gap:8px;align-items:flex-start;"><i class="fas fa-check-circle" style="color:var(--g);margin-top:2px;flex-shrink:0;"></i><span><strong>form_level</strong> – Tingkatan 1–5. Penting untuk RPT automatik.</span></div>
+                <div style="display:flex;gap:8px;align-items:flex-start;"><i class="fas fa-check-circle" style="color:var(--g);margin-top:2px;flex-shrink:0;"></i><span><strong>halaqah_name</strong> – Nama halaqah sedia ada.</span></div>
+                <div style="display:flex;gap:8px;align-items:flex-start;"><i class="fas fa-check-circle" style="color:var(--g);margin-top:2px;flex-shrink:0;"></i><span><strong>parent_email</strong> – Emel wali yang sudah berdaftar.</span></div>
+                <div style="display:flex;gap:8px;align-items:flex-start;"><i class="fas fa-info-circle" style="color:var(--gold);margin-top:2px;flex-shrink:0;"></i><span>Halaqah dan Wali perlu wujud dahulu sebelum import.</span></div>
               </div>
             </div>
           </div>
@@ -774,47 +751,207 @@ tbody td{padding:11px 14px;font-size:13.5px;color:var(--s700);}
       </div>
     </div>
 
-    <!-- ════════ RPT ════════ -->
+    <!-- ════════ RPT MODULE ════════ -->
     <div class="tab-pane" id="pane-rpt">
       <div class="page-hd">
         <div class="page-hd-left">
-          <h2>Editor RPT</h2>
-          <p>Tetapkan sasaran muka surat harian mengikut silibus</p>
+          <h2>Pengurusan RPT</h2>
+          <p>Pelan sasaran automatik mengikut tingkatan, cuti sekolah, dan penggantian manual</p>
         </div>
       </div>
-      <div class="rpt-grid">
-        <div class="mgmt-card">
-          <div class="mgmt-card-hd">
-            <div class="mgmt-hd-icon" style="background:#EFF6FF;color:#2563EB;"><i class="fas fa-plus"></i></div>
-            <div>
-              <div class="mgmt-hd-text">Tambah / Kemaskini Sasaran</div>
-              <div class="mgmt-hd-sub">Masukkan tarikh & muka surat</div>
+
+      <!-- Tab switcher -->
+      <div class="rpt-tabs">
+        <button class="rpt-tab-btn active" onclick="switchRptTab('plans')">
+          <i class="fas fa-calendar-check"></i> Pelan Tingkatan
+        </button>
+        <button class="rpt-tab-btn" onclick="switchRptTab('holidays')">
+          <i class="fas fa-umbrella-beach"></i> Cuti Sekolah
+        </button>
+        <button class="rpt-tab-btn" onclick="switchRptTab('overrides')">
+          <i class="fas fa-pen-to-square"></i> Penggantian Manual
+        </button>
+      </div>
+
+      <!-- ── SUB-TAB 1: RPT PLANS ── -->
+      <div class="rpt-tab-pane active" id="rpt-pane-plans">
+        <div class="info-banner">
+          <i class="fas fa-circle-info"></i>
+          <span>Tetapkan sasaran juzuk sekali setahun untuk setiap tingkatan. Sistem akan mengira sasaran harian secara automatik dengan melangkau hujung minggu dan cuti yang didaftarkan.</span>
+        </div>
+        <div class="rpt-section-grid">
+
+          <!-- Form tambah/edit plan -->
+          <div class="mgmt-card">
+            <div class="mgmt-card-hd">
+              <div class="mgmt-hd-icon" style="background:var(--pp);color:var(--p);"><i class="fas fa-plus"></i></div>
+              <div><div class="mgmt-hd-text">Tambah Pelan RPT</div><div class="mgmt-hd-sub">Satu rekod per tingkatan per tahun</div></div>
+            </div>
+            <div class="mgmt-card-body">
+              <form id="formAddRPTPlan">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                  <div class="field">
+                    <label>Tingkatan</label>
+                    <select id="planForm" required>
+                      <option value="">– Pilih –</option>
+                      <option value="1">Tingkatan 1</option>
+                      <option value="2">Tingkatan 2</option>
+                      <option value="3">Tingkatan 3</option>
+                      <option value="4">Tingkatan 4</option>
+                      <option value="5">Tingkatan 5</option>
+                    </select>
+                  </div>
+                  <div class="field">
+                    <label>Tahun</label>
+                    <input type="number" id="planYear" placeholder="2025" min="2024" max="2099" required />
+                  </div>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                  <div class="field">
+                    <label>Juz Mula</label>
+                    <select id="planJuzStart"></select>
+                  </div>
+                  <div class="field">
+                    <label>Juz Akhir</label>
+                    <select id="planJuzEnd"></select>
+                  </div>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                  <div class="field">
+                    <label>Muka Surat Mula <span>(auto)</span></label>
+                    <input type="number" id="planStartPage" min="1" max="604" required />
+                  </div>
+                  <div class="field">
+                    <label>Muka Surat Akhir <span>(auto)</span></label>
+                    <input type="number" id="planEndPage" min="1" max="604" required />
+                  </div>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                  <div class="field">
+                    <label>Tarikh Mula</label>
+                    <input type="date" id="planStartDate" required />
+                  </div>
+                  <div class="field">
+                    <label>Tarikh Akhir</label>
+                    <input type="date" id="planEndDate" required />
+                  </div>
+                </div>
+                <div class="field"><label>Nota <span>(pilihan)</span></label><input type="text" id="planNotes" placeholder="cth: Semester 1 + 2" /></div>
+                <button type="submit" class="btn-primary" style="width:100%;justify-content:center;"><i class="fas fa-floppy-disk"></i> Simpan Pelan</button>
+              </form>
             </div>
           </div>
-          <div class="mgmt-card-body">
-            <form id="formAddRPT">
-              <div class="field"><label>Tarikh</label><input type="date" id="rptDate" required /></div>
-              <div class="field"><label>Sasaran Muka Surat</label><input type="number" id="rptPage" placeholder="cth: 45" min="1" max="604" required /></div>
-              <div class="field"><label>Juzuk <span>(pilihan)</span></label><input type="number" id="rptJuz" placeholder="1–30" min="1" max="30" /></div>
-              <div class="field"><label>Nota <span>(pilihan)</span></label><input type="text" id="rptNote" placeholder="cth: Masuk Juzuk 3" /></div>
-              <button type="submit" class="btn-primary" style="width:100%;justify-content:center;"><i class="fas fa-floppy-disk"></i> Simpan</button>
-            </form>
-          </div>
-        </div>
 
-        <div class="card">
-          <div class="card-hd" style="padding-bottom:14px;">
-            <div class="card-title"><i class="fas fa-calendar-days"></i> Sasaran Akan Datang</div>
-          </div>
-          <div class="table-wrap">
-            <table>
-              <thead><tr><th>Tarikh</th><th>Sasaran (ms.)</th><th>Juzuk</th><th>Nota</th><th>Tindakan</th></tr></thead>
-              <tbody id="rptTableBody"><tr class="empty-row"><td colspan="5">Tiada rekod.</td></tr></tbody>
-            </table>
+          <!-- List of plans -->
+          <div>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+              <div style="font-size:15px;font-weight:700;color:var(--s700);">
+                <i class="fas fa-list-check" style="color:var(--p);margin-right:7px;"></i>Pelan Aktif Tahun Ini
+              </div>
+            </div>
+            <div id="rptPlanList">
+              <div class="empty-msg"><i class="fas fa-spinner fa-spin"></i></div>
+            </div>
           </div>
         </div>
       </div>
-    </div>
+
+      <!-- ── SUB-TAB 2: HOLIDAYS ── -->
+      <div class="rpt-tab-pane" id="rpt-pane-holidays">
+        <div class="info-banner">
+          <i class="fas fa-circle-info"></i>
+          <span>Daftarkan cuti umum dan cuti sekolah. Hari Sabtu &amp; Ahad dilangkau secara automatik — hanya daftarkan cuti pada hari biasa (Isnin–Jumaat) di sini.</span>
+        </div>
+        <div class="rpt-section-grid">
+
+          <!-- Form tambah cuti -->
+          <div class="mgmt-card">
+            <div class="mgmt-card-hd">
+              <div class="mgmt-hd-icon" style="background:var(--goldp);color:var(--gold);"><i class="fas fa-umbrella-beach"></i></div>
+              <div><div class="mgmt-hd-text">Tambah Cuti</div><div class="mgmt-hd-sub">Cuti umum atau cuti sekolah</div></div>
+            </div>
+            <div class="mgmt-card-body">
+              <form id="formAddHoliday">
+                <div class="field"><label>Tarikh</label><input type="date" id="holidayDate" required /></div>
+                <div class="field"><label>Keterangan</label><input type="text" id="holidayDesc" placeholder="cth: Hari Raya Aidilfitri" required /></div>
+                <div class="field">
+                  <label>Jenis Cuti</label>
+                  <select id="holidayType">
+                    <option value="public_holiday">Cuti Umum (Public Holiday)</option>
+                    <option value="school_holiday">Cuti Sekolah</option>
+                  </select>
+                </div>
+                <button type="submit" class="btn-primary" style="width:100%;justify-content:center;"><i class="fas fa-plus"></i> Tambah Cuti</button>
+              </form>
+            </div>
+          </div>
+
+          <!-- List of holidays -->
+          <div class="card">
+            <div class="card-hd" style="padding-bottom:14px;">
+              <div class="card-title"><i class="fas fa-calendar-xmark"></i> Senarai Cuti Tahun Ini</div>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Tarikh</th><th>Keterangan</th><th>Jenis</th><th>Tindakan</th></tr></thead>
+                <tbody id="holidayList"><tr class="empty-row"><td colspan="4"><i class="fas fa-spinner fa-spin"></i></td></tr></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── SUB-TAB 3: OVERRIDES ── -->
+      <div class="rpt-tab-pane" id="rpt-pane-overrides">
+        <div class="info-banner">
+          <i class="fas fa-circle-info"></i>
+          <span>Penggantian manual hanya diperlukan untuk kes khas seperti peperiksaan atau perubahan mendadak. Sistem sedia mengira sasaran secara automatik — jangan tambah penggantian melainkan perlu.</span>
+        </div>
+        <div class="rpt-section-grid">
+
+          <!-- Form tambah override -->
+          <div class="mgmt-card">
+            <div class="mgmt-card-hd">
+              <div class="mgmt-hd-icon" style="background:#EFF6FF;color:#2563EB;"><i class="fas fa-pen-to-square"></i></div>
+              <div><div class="mgmt-hd-text">Tambah Penggantian</div><div class="mgmt-hd-sub">Ganti sasaran untuk tarikh tertentu</div></div>
+            </div>
+            <div class="mgmt-card-body">
+              <form id="formAddRPTOverride">
+                <div class="field"><label>Tarikh</label><input type="date" id="overrideDate" required /></div>
+                <div class="field">
+                  <label>Tingkatan <span>(kosongkan untuk semua)</span></label>
+                  <select id="overrideForm">
+                    <option value="">Semua Tingkatan</option>
+                    <option value="1">Tingkatan 1</option>
+                    <option value="2">Tingkatan 2</option>
+                    <option value="3">Tingkatan 3</option>
+                    <option value="4">Tingkatan 4</option>
+                    <option value="5">Tingkatan 5</option>
+                  </select>
+                </div>
+                <div class="field"><label>Sasaran Muka Surat</label><input type="number" id="overridePage" placeholder="cth: 45" min="1" max="604" required /></div>
+                <div class="field"><label>Nota <span>(pilihan)</span></label><input type="text" id="overrideNote" placeholder="cth: Minggu Peperiksaan" /></div>
+                <button type="submit" class="btn-primary" style="width:100%;justify-content:center;"><i class="fas fa-floppy-disk"></i> Simpan Penggantian</button>
+              </form>
+            </div>
+          </div>
+
+          <!-- List of overrides -->
+          <div class="card">
+            <div class="card-hd" style="padding-bottom:14px;">
+              <div class="card-title"><i class="fas fa-list"></i> Penggantian Akan Datang</div>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Tarikh</th><th>Tingkatan</th><th>Sasaran (ms.)</th><th>Nota</th><th>Tindakan</th></tr></thead>
+                <tbody id="rptOverrideList"><tr class="empty-row"><td colspan="5">Tiada penggantian. Sistem guna pengiraan automatik.</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /pane-rpt -->
 
     <!-- ════════ ANNOUNCEMENTS ════════ -->
     <div class="tab-pane" id="pane-announcements">
@@ -847,7 +984,6 @@ tbody td{padding:11px 14px;font-size:13.5px;color:var(--s700);}
             </form>
           </div>
         </div>
-
         <div class="card">
           <div class="card-hd"><div class="card-title"><i class="fas fa-list"></i> Semua Pengumuman</div></div>
           <div class="card-body" id="announcementList">
@@ -873,6 +1009,17 @@ tbody td{padding:11px 14px;font-size:13.5px;color:var(--s700);}
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
       <div class="field"><label>Muka Surat Semasa</label><input type="number" id="editStudentPage" min="1" max="604" /></div>
       <div class="field"><label>Juzuk Semasa</label><input type="number" id="editStudentJuz" min="1" max="30" /></div>
+    </div>
+    <div class="field">
+      <label>Tingkatan <span style="color:var(--p);font-weight:400;text-transform:none;">(untuk pengiraan RPT)</span></label>
+      <select id="editStudentForm">
+        <option value="">– Tiada Tingkatan –</option>
+        <option value="1">Tingkatan 1</option>
+        <option value="2">Tingkatan 2</option>
+        <option value="3">Tingkatan 3</option>
+        <option value="4">Tingkatan 4</option>
+        <option value="5">Tingkatan 5</option>
+      </select>
     </div>
     <div class="field"><label>Halaqah</label><select id="editStudentHalaqah" class="sel-halaqah-edit"></select></div>
     <div class="field"><label>Wali Murid <span style="color:var(--s400);font-weight:400;text-transform:none;">(tukar untuk ubah wali)</span></label><select id="editStudentParent"></select></div>
@@ -902,6 +1049,48 @@ tbody td{padding:11px 14px;font-size:13.5px;color:var(--s700);}
   </div>
 </div>
 
+<!-- ════════ MODAL: RPT Plan Edit ════════ -->
+<div class="modal-ov" id="rptPlanModal">
+  <div class="modal" style="max-width:520px;">
+    <div class="modal-hd">
+      <div class="modal-title" id="rptPlanModalTitle"><i class="fas fa-calendar-check" style="color:var(--p);margin-right:8px;font-size:15px;"></i>Pelan RPT</div>
+      <button class="modal-close" onclick="closeModal('rptPlanModal')"><i class="fas fa-times"></i></button>
+    </div>
+    <input type="hidden" id="planId" />
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div class="field">
+        <label>Tingkatan</label>
+        <select id="planForm" required>
+          <option value="">– Pilih –</option>
+          <option value="1">Tingkatan 1</option>
+          <option value="2">Tingkatan 2</option>
+          <option value="3">Tingkatan 3</option>
+          <option value="4">Tingkatan 4</option>
+          <option value="5">Tingkatan 5</option>
+        </select>
+      </div>
+      <div class="field"><label>Tahun</label><input type="number" id="planYear" min="2024" max="2099" /></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div class="field"><label>Juz Mula</label><select id="planJuzStart"></select></div>
+      <div class="field"><label>Juz Akhir</label><select id="planJuzEnd"></select></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div class="field"><label>Muka Surat Mula</label><input type="number" id="planStartPage" min="1" max="604" /></div>
+      <div class="field"><label>Muka Surat Akhir</label><input type="number" id="planEndPage" min="1" max="604" /></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div class="field"><label>Tarikh Mula</label><input type="date" id="planStartDate" /></div>
+      <div class="field"><label>Tarikh Akhir</label><input type="date" id="planEndDate" /></div>
+    </div>
+    <div class="field"><label>Nota <span>(pilihan)</span></label><input type="text" id="planNotes" placeholder="cth: Semester 1 + 2" /></div>
+    <div class="modal-footer">
+      <button class="btn-primary" onclick="submitRPTPlanModal()"><i class="fas fa-floppy-disk"></i> Simpan</button>
+      <button class="btn-cancel" onclick="closeModal('rptPlanModal')">Batal</button>
+    </div>
+  </div>
+</div>
+
 <!-- ════════ TOAST ════════ -->
 <div class="toast" id="toast"></div>
 
@@ -922,12 +1111,22 @@ tbody td{padding:11px 14px;font-size:13.5px;color:var(--s700);}
       sidebar.classList.remove('open');
     }
   });
-  // Close sidebar when a nav item is clicked on mobile
   sidebar.querySelectorAll('.nav-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       if (window.innerWidth <= 900) sidebar.classList.remove('open');
     });
   });
+
+  // RPT sub-tab switcher
+  function switchRptTab(tab) {
+    document.querySelectorAll('.rpt-tab-btn').forEach((b, i) => {
+      const tabs = ['plans','holidays','overrides'];
+      b.classList.toggle('active', tabs[i] === tab);
+    });
+    document.querySelectorAll('.rpt-tab-pane').forEach(p => {
+      p.classList.toggle('active', p.id === `rpt-pane-${tab}`);
+    });
+  }
 </script>
 </body>
 </html>
