@@ -22,10 +22,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     window.AppState.profile = profile;
     window.AppState.role = profile.role;
 
+    // FIX #14: Watch for token expiry mid-session
+    watchSession();
+
     populateNavProfile(profile);
 
     await Promise.all([
-        loadChildren(profile.id),
+        loadChildren(profile.id, profile.role),
         loadAnnouncements(profile.role),
     ]);
 
@@ -66,26 +69,24 @@ async function loadAnnouncements(role) {
 
 // ============================================================
 // LOAD CHILDREN
+// FIX #18: Students with role='student' see their own record via student_user_id
 // ============================================================
 
-async function loadChildren(parentId) {
-    // Use student_progress view — it already has:
-    // target_page_total  → auto-calculated via get_rpt_target() per form_level
-    // hutang             → target_page_total - current_page
-    // status             → ahead / warning / behind / no_rpt / no_form
-    // halaqah_name, teacher_name, parent_name
-    const { data: students, error } = await supabase
-        .from('student_progress')
-        .select('*')
-        .eq('parent_id', parentId);
+async function loadChildren(userId, role) {
+    let query = supabase.from('student_progress').select('*');
+
+    if (role === 'student') {
+        // FIX #18: Student users link via student_user_id column
+        query = query.eq('student_user_id', userId);
+    } else {
+        // Parents and admins link via parent_id
+        query = query.eq('parent_id', userId);
+    }
+
+    const { data: students, error } = await query;
 
     if (error) { console.error(error); return; }
-
-    // Also fetch photo_url and halaqah teacher details not in the view
-    // We enrich with halaqah join for teacher name (already in view as teacher_name)
-    // Fetch photo separately since student_progress exposes photo_url
     myChildren = students || [];
-
     renderChildren();
 }
 
@@ -109,7 +110,10 @@ function renderChildren() {
 
     container.innerHTML = myChildren.map(child => renderChildCard(child)).join('');
 
-    myChildren.forEach(child => loadChildLogs(child.id));
+    myChildren.forEach(child => {
+        loadChildLogs(child.id);
+        loadWeeklyTrend(child.id, `trend-${child.id}`);
+    });
 }
 
 function renderChildCard(child) {
@@ -235,6 +239,18 @@ function renderChildCard(child) {
         <div class="cc-progress-meta">${child.current_page} / 604 muka surat</div>
       </div>
 
+      <!-- WEEKLY TREND -->
+      <div class="cc-progress-section" style="margin-top:8px;margin-bottom:4px;">
+        <div class="cc-progress-header">
+          <span class="cc-progress-label"><i class="fas fa-chart-bar"></i> Aktiviti Minggu Ini</span>
+        </div>
+        <div id="trend-${child.id}">
+          <div style="text-align:center;color:var(--slate-400);font-size:12px;padding:8px;">
+            <i class="fas fa-spinner fa-spin"></i> Memuat...
+          </div>
+        </div>
+      </div>
+
       <!-- LOGS -->
       <div class="cc-logs-section">
         <div class="cc-logs-title"><i class="fas fa-clipboard-list"></i> Log Tasmik Terkini</div>
@@ -260,9 +276,9 @@ async function loadChildLogs(studentId) {
     const container = document.getElementById(`logs-${studentId}`);
     if (!container) return;
 
-    const typeLabels = { jadid: 'Hifz Jadid', murajaah_u: 'Murajaah Umum', murajaah_q: 'Murajaah Khas' };
-    const typeColors = { jadid: '#6B21A8', murajaah_u: '#16A34A', murajaah_q: '#D97706' };
-    const typeBg     = { jadid: '#F3E8FF', murajaah_u: '#DCFCE7', murajaah_q: '#FEF3C7' };
+    const typeLabels = { jadid: 'Hifz Jadid', murajaah_u: 'Murajaah Umum', murajaah_q: 'Murajaah Khas', hadir: 'Kehadiran' };
+    const typeColors = { jadid: '#6B21A8', murajaah_u: '#16A34A', murajaah_q: '#D97706', hadir: '#2563EB' };
+    const typeBg     = { jadid: '#F3E8FF', murajaah_u: '#DCFCE7', murajaah_q: '#FEF3C7', hadir: '#EFF6FF' };
 
     if (!logs || !logs.length) {
         container.innerHTML = '<p class="no-logs"><i class="fas fa-inbox"></i> Belum ada log tasmik.</p>';
@@ -271,8 +287,8 @@ async function loadChildLogs(studentId) {
 
     container.innerHTML = logs.map(log => `
         <div class="log-item">
-          <div class="log-type-badge" style="background:${typeBg[log.type]};color:${typeColors[log.type]};">
-            ${typeLabels[log.type]}
+          <div class="log-type-badge" style="background:${typeBg[log.type] || '#F1F5F9'};color:${typeColors[log.type] || '#64748B'};">
+            ${typeLabels[log.type] || log.type}
           </div>
           <div class="log-info">
             <span class="log-page">ms. ${log.page_number}</span>
@@ -281,6 +297,63 @@ async function loadChildLogs(studentId) {
           <div class="log-stars">${'⭐'.repeat(log.quality_score || 0)}</div>
         </div>
     `).join('');
+}
+
+// ============================================================
+// FIX #8: WEEKLY TREND — pages logged per day over last 7 days
+// ============================================================
+
+async function loadWeeklyTrend(studentId, containerId) {
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
+    const fromDate = sevenDaysAgo.toISOString().split('T')[0];
+
+    const { data: logs } = await supabase
+        .from('hifz_logs')
+        .select('session_date, page_number, type')
+        .eq('student_id', studentId)
+        .eq('type', 'jadid')
+        .gte('session_date', fromDate)
+        .order('session_date');
+
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    // Build daily map
+    const dayMap = {};
+    for (let i = 6; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        const key = d.toISOString().split('T')[0];
+        dayMap[key] = 0;
+    }
+    if (logs) {
+        logs.forEach(l => {
+            if (dayMap.hasOwnProperty(l.session_date)) dayMap[l.session_date]++;
+        });
+    }
+
+    const days = Object.keys(dayMap);
+    const values = Object.values(dayMap);
+    const maxVal = Math.max(...values, 1);
+    const dayNames = ['Ahd', 'Isn', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
+
+    container.innerHTML = `
+        <div style="display:flex;align-items:flex-end;gap:6px;height:48px;margin-top:4px;">
+          ${days.map((d, i) => {
+              const h = Math.round((values[i] / maxVal) * 44);
+              const dayName = dayNames[new Date(d).getDay()];
+              const isToday = d === getTodayDate();
+              return `
+              <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;">
+                <div style="width:100%;height:${h || 3}px;background:${isToday ? '#6B21A8' : values[i] > 0 ? '#A78BFA' : '#E2E8F0'};border-radius:3px 3px 0 0;transition:height 0.4s;"></div>
+                <div style="font-size:9px;color:#94A3B8;font-weight:600;">${dayName}</div>
+              </div>`;
+          }).join('')}
+        </div>
+        <div style="font-size:11px;color:#94A3B8;margin-top:6px;text-align:center;">
+          Log Hifz Jadid — 7 Hari Lepas &nbsp;·&nbsp; Jumlah: ${values.reduce((a,b)=>a+b,0)} log
+        </div>`;
 }
 
 window.loadChildren = loadChildren;

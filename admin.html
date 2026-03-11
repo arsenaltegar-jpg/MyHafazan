@@ -412,6 +412,14 @@ tbody td{padding:11px 14px;font-size:13.5px;color:var(--s700);}
   </div>
 
   <div class="sb-footer">
+    <div style="padding:0 0 10px;">
+      <button onclick="adminChangeOwnPassword()" style="width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.5);border-radius:8px;padding:7px 10px;font-size:11.5px;font-family:'DM Sans',sans-serif;cursor:pointer;display:flex;align-items:center;gap:7px;transition:.15s;margin-bottom:6px;">
+        <i class="fas fa-key" style="color:var(--pg);"></i> Tukar Kata Laluan Saya
+      </button>
+      <button onclick="resetAcademicYear()" style="width:100%;background:rgba(220,38,38,0.1);border:1px solid rgba(220,38,38,0.2);color:rgba(248,113,113,0.8);border-radius:8px;padding:7px 10px;font-size:11.5px;font-family:'DM Sans',sans-serif;cursor:pointer;display:flex;align-items:center;gap:7px;transition:.15s;">
+        <i class="fas fa-rotate-left"></i> Reset Tahun Akademik
+      </button>
+    </div>
     <div class="user-chip">
       <div class="uc-av" id="navAvatar">A</div>
       <div style="flex:1;min-width:0;">
@@ -572,8 +580,8 @@ tbody td{padding:11px 14px;font-size:13.5px;color:var(--s700);}
       <div class="card">
         <div class="table-wrap">
           <table>
-            <thead><tr><th>Nama</th><th>No. Telefon</th><th>Halaqah</th><th>Tindakan</th></tr></thead>
-            <tbody id="teacherTableBody"><tr class="empty-row"><td colspan="4"><i class="fas fa-spinner fa-spin"></i></td></tr></tbody>
+            <thead><tr><th>Nama</th><th>No. Telefon</th><th>Halaqah</th><th>Reset Kata Laluan</th><th>Tindakan</th></tr></thead>
+            <tbody id="teacherTableBody"><tr class="empty-row"><td colspan="5"><i class="fas fa-spinner fa-spin"></i></td></tr></tbody>
           </table>
         </div>
       </div>
@@ -623,7 +631,7 @@ tbody td{padding:11px 14px;font-size:13.5px;color:var(--s700);}
             <form id="formTeacher">
               <div class="field"><label>Nama Penuh</label><input type="text" id="teacherName" placeholder="Ustaz/Ustazah..." required /></div>
               <div class="field"><label>Emel</label><input type="email" id="teacherEmail" placeholder="murabbi@sekolah.edu.my" required /></div>
-              <div class="field"><label>Kata Laluan</label><input type="password" id="teacherPass" placeholder="Min. 6 aksara" required minlength="6" /></div>
+              <div class="field"><label>Kata Laluan</label><input type="password" id="teacherPass" placeholder="Min. 8 aksara" required minlength="8" /></div>
               <button type="submit" class="btn-primary" style="width:100%;justify-content:center;"><i class="fas fa-plus"></i> Daftar Murabbi</button>
             </form>
           </div>
@@ -639,8 +647,11 @@ tbody td{padding:11px 14px;font-size:13.5px;color:var(--s700);}
             <form id="formParent">
               <div class="field"><label>Nama Penuh Wali</label><input type="text" id="parentName" placeholder="Nama wali..." required /></div>
               <div class="field"><label>Emel</label><input type="email" id="parentEmail" placeholder="wali@email.com" required /></div>
-              <div class="field"><label>Kata Laluan</label><input type="password" id="parentPass" placeholder="Min. 6 aksara" required minlength="6" /></div>
+              <div class="field"><label>Kata Laluan</label><input type="password" id="parentPass" placeholder="Min. 8 aksara" required minlength="8" /></div>
               <button type="submit" class="btn-primary" style="width:100%;justify-content:center;"><i class="fas fa-plus"></i> Daftar Wali</button>
+              <div style="margin-top:10px;font-size:11.5px;color:var(--gold);background:var(--goldp);border-radius:8px;padding:8px 12px;">
+                <i class="fas fa-circle-info"></i> <strong>Langkah seterusnya:</strong> Selepas daftar Wali, pergi ke bahagian "Daftar Pelajar" di bawah dan hubungkan pelajar dengan Wali yang baru didaftarkan.
+              </div>
             </form>
           </div>
         </div>
@@ -734,8 +745,8 @@ tbody td{padding:11px 14px;font-size:13.5px;color:var(--s700);}
               <p style="margin-bottom:12px;">Pastikan fail CSV anda mengikut format berikut:</p>
               <div style="background:var(--s900);border-radius:9px;padding:14px;font-family:'DM Mono',monospace;font-size:12px;color:#86efac;margin-bottom:14px;overflow-x:auto;">
                 full_name,matric_no,form_level,halaqah_name,parent_email<br>
-                Ahmad Faris,MT2025001,1,Halaqah Al-Baqarah,abu@email.com<br>
-                Siti Aisyah,MT2025002,2,Halaqah Al-Fatihah,ali@email.com
+                Ahmad Faris,MT2025001,1,Halaqah Al-Baqarah,<a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="aacbc8dfeacfc7cbc3c684c9c5c7">[email&#160;protected]</a><br>
+                Siti Aisyah,MT2025002,2,Halaqah Al-Fatihah,<a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="38595451785d55595154165b5755">[email&#160;protected]</a>
               </div>
               <div style="display:flex;flex-direction:column;gap:8px;">
                 <div style="display:flex;gap:8px;align-items:flex-start;"><i class="fas fa-check-circle" style="color:var(--g);margin-top:2px;flex-shrink:0;"></i><span><strong>full_name</strong> – Wajib.</span></div>
@@ -1104,7 +1115,7 @@ tbody td{padding:11px 14px;font-size:13.5px;color:var(--s700);}
 <!-- ════════ TOAST ════════ -->
 <div class="toast" id="toast"></div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
 <script src="auth.js"></script>
 <script src="admin.js"></script>
@@ -1132,18 +1143,4 @@ tbody td{padding:11px 14px;font-size:13.5px;color:var(--s700);}
       !sidebar.contains(e.target) &&
       !menuToggle.contains(e.target)
     ) {
-      sidebar.classList.remove('open');
-    }
-  });
-
-  /* Close sidebar when a nav item is tapped on mobile */
-  sidebar.querySelectorAll('.nav-btn').forEach(function(btn) {
-    btn.addEventListener('click', function() {
-      if (window.innerWidth <= 900) {
-        sidebar.classList.remove('open');
-      }
-    });
-  });
-</script>
-</body>
-</html>
+      sid

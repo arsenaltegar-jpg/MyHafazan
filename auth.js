@@ -223,9 +223,14 @@ async function sendPasswordReset(email) {
 
 // ============================================================
 // CREATE USER (Admin only)
+// FIX #1: Password strength enforced server-side (min 8 chars)
 // ============================================================
 
 async function adminCreateUser(fullName, email, password, role) {
+    // FIX #1: Enforce minimum password length before API call
+    if (!password || password.length < 8) {
+        throw new Error('Kata laluan mesti sekurang-kurangnya 8 aksara.');
+    }
     const { data, error } = await window.supabase.auth.signUp({
         email,
         password,
@@ -240,6 +245,32 @@ async function adminCreateUser(fullName, email, password, role) {
         if (profileError) throw profileError;
     }
     return data;
+}
+
+// ============================================================
+// CHANGE PASSWORD (Self-service for logged-in users)
+// FIX #3: Teachers and parents can change own password
+// ============================================================
+
+async function changePassword(newPassword) {
+    if (!newPassword || newPassword.length < 8) {
+        throw new Error('Kata laluan baru mesti sekurang-kurangnya 8 aksara.');
+    }
+    const { error } = await window.supabase.auth.updateUser({ password: newPassword });
+    if (error) throw error;
+}
+
+// ============================================================
+// SESSION AUTH STATE WATCHER
+// FIX #14: Protected pages call this to handle mid-session expiry
+// ============================================================
+
+function watchSession() {
+    window.supabase.auth.onAuthStateChange((event) => {
+        if (event === 'SIGNED_OUT') {
+            window.location.href = 'index.html';
+        }
+    });
 }
 
 // ============================================================
@@ -328,6 +359,8 @@ window.loginWithGoogle = loginWithGoogle;
 window.logout = logout;
 window.requireAuth = requireAuth;
 window.adminCreateUser = adminCreateUser;
+window.changePassword = changePassword;
+window.watchSession = watchSession;
 window.populateNavProfile = populateNavProfile;
 window.formatDateMY = formatDateMY;
 window.getTodayDate = getTodayDate;

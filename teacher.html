@@ -188,6 +188,7 @@ body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--slate-100
       <div class="user-name" id="navUserName">Murabbi</div>
       <div class="user-role" id="navUserRole">Murabbi</div>
     </div>
+    <button class="btn-icon" id="changePwdBtn" title="Tukar Kata Laluan"><i class="fas fa-key"></i></button>
     <button class="btn-icon" id="logoutBtn" title="Log Keluar"><i class="fas fa-right-from-bracket"></i></button>
   </div>
 </div>
@@ -248,7 +249,7 @@ body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--slate-100
 
     <!-- LOG TYPE -->
     <div class="section-label">Jenis Tasmik</div>
-    <div class="log-type-grid">
+    <div class="log-type-grid" style="grid-template-columns:repeat(2,1fr);">
       <button class="type-btn selected" data-type="jadid" onclick="selectType(this)">
         <i class="fas fa-star"></i> Hifz Jadid
       </button>
@@ -257,6 +258,9 @@ body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--slate-100
       </button>
       <button class="type-btn" data-type="murajaah_q" onclick="selectType(this)">
         <i class="fas fa-shield-halved"></i> Murajaah Khas
+      </button>
+      <button class="type-btn" data-type="hadir" onclick="selectType(this)">
+        <i class="fas fa-user-check"></i> Kehadiran Sahaja
       </button>
     </div>
     <input type="hidden" id="logType" value="jadid" />
@@ -297,6 +301,28 @@ body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--slate-100
   <div id="modalBackdrop" style="position:absolute;inset:0;z-index:-1;"></div>
 </div>
 
+<!-- FIX #3: Change Password Modal -->
+<div id="changePwdModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:2000;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(4px);">
+  <div style="background:white;border-radius:20px;padding:28px;width:100%;max-width:380px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+      <div style="font-size:17px;font-weight:800;color:var(--slate-800);"><i class="fas fa-key" style="color:var(--purple);margin-right:8px;"></i>Tukar Kata Laluan</div>
+      <button onclick="document.getElementById('changePwdModal').style.display='none';" style="background:none;border:none;font-size:20px;color:var(--slate-400);cursor:pointer;"><i class="fas fa-times"></i></button>
+    </div>
+    <div id="changePwdError" style="display:none;background:#FEE2E2;border:1px solid rgba(220,38,38,0.2);border-radius:10px;padding:10px 14px;color:#DC2626;font-size:13px;margin-bottom:12px;"></div>
+    <div style="margin-bottom:14px;">
+      <label style="display:block;font-size:12px;font-weight:600;color:var(--slate-600);margin-bottom:6px;">Kata Laluan Baru (min. 8 aksara)</label>
+      <input type="password" id="newPwdInput" style="width:100%;border:1.5px solid #E2E8F0;border-radius:10px;padding:10px 12px;font-size:16px;outline:none;" placeholder="••••••••" />
+    </div>
+    <div style="margin-bottom:14px;">
+      <label style="display:block;font-size:12px;font-weight:600;color:var(--slate-600);margin-bottom:6px;">Sahkan Kata Laluan Baru</label>
+      <input type="password" id="confirmPwdInput" style="width:100%;border:1.5px solid #E2E8F0;border-radius:10px;padding:10px 12px;font-size:16px;outline:none;" placeholder="••••••••" />
+    </div>
+    <button id="savePwdBtn" onclick="submitChangePassword()" style="width:100%;background:linear-gradient(135deg,#6B21A8,#7C3AED);color:white;border:none;border-radius:12px;padding:13px;font-size:14px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;">
+      <i class="fas fa-floppy-disk"></i> Simpan Kata Laluan
+    </button>
+  </div>
+</div>
+
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 
@@ -308,6 +334,40 @@ function selectType(btn) {
   document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('selected'));
   btn.classList.add('selected');
   document.getElementById('logType').value = btn.dataset.type;
+  // Hide page field for attendance-only log
+  const pageField = document.getElementById('logPage').closest('.field');
+  const qualityField = document.getElementById('logQuality').closest('.field');
+  if (btn.dataset.type === 'hadir') {
+    if (pageField) pageField.style.opacity = '0.4';
+    if (qualityField) qualityField.style.opacity = '0.4';
+  } else {
+    if (pageField) pageField.style.opacity = '1';
+    if (qualityField) qualityField.style.opacity = '1';
+  }
+}
+
+// FIX #3: Change password wiring
+document.getElementById('changePwdBtn')?.addEventListener('click', () => {
+  document.getElementById('changePwdModal').style.display = 'flex';
+});
+
+async function submitChangePassword() {
+  const np = document.getElementById('newPwdInput').value;
+  const cp = document.getElementById('confirmPwdInput').value;
+  const errEl = document.getElementById('changePwdError');
+  errEl.style.display = 'none';
+  if (np.length < 8) { errEl.textContent = 'Kata laluan mesti sekurang-kurangnya 8 aksara.'; errEl.style.display = 'block'; return; }
+  if (np !== cp) { errEl.textContent = 'Kata laluan tidak sepadan.'; errEl.style.display = 'block'; return; }
+  const btn = document.getElementById('savePwdBtn');
+  btn.disabled = true;
+  try {
+    await changePassword(np);
+    document.getElementById('changePwdModal').style.display = 'none';
+    showTeacherToast('Kata laluan berjaya dikemaskini! 🔐', 'success');
+  } catch(err) {
+    errEl.textContent = err.message;
+    errEl.style.display = 'block';
+  } finally { btn.disabled = false; }
 }
 </script>
 </body>

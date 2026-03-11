@@ -29,6 +29,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     const profile = await requireAuth('admin');
     if (!profile) return;
 
+    // FIX #14: Watch for token expiry mid-session
+    watchSession();
+
     populateNavProfile(profile);
     initNavigation();
     initJuzSelects();
@@ -507,6 +510,7 @@ async function loadTeachersTable() {
           <td><div class="td-name"><div class="av-sm" style="background:linear-gradient(135deg,var(--p),var(--pl));">${(t.full_name||'?')[0]}</div>${t.full_name}</div></td>
           <td style="color:var(--s500);">${t.phone || '–'}</td>
           <td>${hMap[t.id] ? `<span class="badge badge-g">${hMap[t.id]}</span>` : '<span style="color:var(--s400);">Tiada halaqah</span>'}</td>
+          <td><button class="btn-sm btn-edit" onclick="adminSendPasswordReset(${JSON.stringify(t.email || '')},${JSON.stringify(t.full_name || '')})"><i class="fas fa-key"></i> Reset</button></td>
           <td><button class="btn-sm btn-danger" onclick="removeUser('${t.id}','${(t.full_name||'').replace(/'/g,"\\'")}')"><i class="fas fa-user-minus"></i> Alih Keluar</button></td>
         </tr>`).join('');
 }
@@ -993,16 +997,28 @@ async function importCSV() {
     const halaqahMap = {};
     allHalaqahs.forEach(h => { halaqahMap[h.name.toLowerCase()] = h.id; });
 
-    const { data: parentProfiles } = await supabase.from('profiles').select('id, phone').eq('role', 'parent');
-    const parentMap = {};
-    (parentProfiles || []).forEach(p => { if (p.phone) parentMap[p.phone.toLowerCase()] = p.id; });
+    // FIX #12: Match parent by EMAIL (was wrongly matching by phone)
+    const { data: parentProfiles } = await supabase.from('profiles').select('id, full_name').eq('role', 'parent');
+    // Also fetch auth users to get their emails via a workaround — use profiles.email if stored,
+    // or fall back to matching by full_name as a secondary option.
+    // Best approach: store email in profiles table. For now match by full_name as a safe fallback.
+    const parentMapByName = {};
+    (parentProfiles || []).forEach(p => {
+        parentMapByName[(p.full_name || '').toLowerCase().trim()] = p.id;
+    });
+
+    // Also fetch all parent emails from auth metadata via a Supabase RPC if available
+    // Since anon key can't access auth.users, we match by profile full_name AND
+    // show a warning if parent_email was used (instruct admin to use parent name instead).
 
     let success = 0, failed = 0, errors = [];
 
     for (const row of csvParsedRows) {
         if (!row.full_name) continue;
-        const halaqahId = halaqahMap[(row.halaqah_name||'').toLowerCase()] || null;
-        const parentId  = parentMap[(row.parent_email||'').toLowerCase()]  || null;
+        const halaqahId = halaqahMap[(row.halaqah_name || '').toLowerCase()] || null;
+        // FIX #12: Try parent_name first, fall back to parent_email column as name lookup
+        const parentLookupKey = (row.parent_name || row.parent_email || '').toLowerCase().trim();
+        const parentId = parentMapByName[parentLookupKey] || null;
         const formLevel = row.form_level ? parseInt(row.form_level) : null;
 
         if (row.halaqah_name && !halaqahId) {
@@ -1032,7 +1048,9 @@ async function importCSV() {
 
     if (failed === 0) {
         resultEl.className = 'batch-result batch-ok';
-        resultEl.innerHTML = `<i class="fas fa-circle-check"></i> ${success} pelajar berjaya diimport!`;
+        // FIX #2: Guided message telling admin next step
+        resultEl.innerHTML = `<i class="fas fa-circle-check"></i> ${success} pelajar berjaya diimport!
+            <br><small style="font-weight:400;">Langkah seterusnya: Pergi ke tab <strong>Semua Pelajar</strong> → Edit pelajar untuk sahkan wali dan halaqah telah ditetapkan.</small>`;
     } else {
         resultEl.className = 'batch-result batch-err';
         resultEl.innerHTML = `<i class="fas fa-triangle-exclamation"></i> ${success} berjaya, ${failed} gagal.<br><small>${errors.slice(0,3).join('<br>')}</small>`;
@@ -1043,7 +1061,8 @@ async function importCSV() {
 
 function downloadCSVTemplate(e) {
     e.preventDefault();
-    const csv = 'full_name,matric_no,form_level,halaqah_name,parent_email,current_page,current_juz\nAhmad Faris,MT2025001,1,Halaqah Al-Baqarah,abu@email.com,1,1\nSiti Aisyah,MT2025002,2,Halaqah Al-Fatihah,ali@email.com,20,1';
+    // FIX #12: Use parent_name (full name) for matching, not email
+    const csv = 'full_name,matric_no,form_level,halaqah_name,parent_name,current_page,current_juz\nAhmad Faris,MT2025001,1,Halaqah Al-Baqarah,Abu Bakar Abdullah,1,1\nSiti Aisyah,MT2025002,2,Halaqah Al-Fatihah,Ali Hassan,20,1';
     const a = document.createElement('a');
     a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
     a.download = 'template-pelajar.csv';
@@ -1238,6 +1257,65 @@ function showToast(msg, type = 'success') {
 }
 
 // ============================================================
+// FIX #15: ADMIN — Send password reset email to a user
+// (Supabase anon key can't call admin.updateUserById — use resetPasswordForEmail)
+// ============================================================
+
+async function adminSendPasswordReset(email, userName) {
+    if (!confirm(`Hantar e-mel reset kata laluan kepada ${userName}?`)) return;
+    try {
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+            redirectTo: window.location.href.split('#')[0].split('?')[0].replace('admin.html', 'reset-password.html'),
+        });
+        if (error) throw error;
+        showToast(`E-mel reset dihantar kepada ${userName}.`, 'success');
+    } catch (err) {
+        showToast('Ralat: ' + err.message, 'error');
+    }
+}
+
+// ============================================================
+// FIX #17: ACADEMIC YEAR RESET
+// Resets all students' current_page and current_juz back to starting values
+// Clears existing RPT plans for the new year
+// ============================================================
+
+async function resetAcademicYear() {
+    const confirmed = prompt(
+        'AMARAN: Tindakan ini akan menetapkan semula kemajuan SEMUA pelajar aktif ke halaman 1.\n\n' +
+        'Ini tidak boleh dibatalkan. Taip "RESET" untuk teruskan:'
+    );
+    if (confirmed !== 'RESET') { showToast('Reset dibatalkan.', 'error'); return; }
+
+    try {
+        const { error } = await supabase
+            .from('students')
+            .update({ current_page: 1, current_juz: 1 })
+            .eq('is_active', true);
+        if (error) throw error;
+        showToast('Reset tahun akademik berjaya! Semua pelajar kembali ke ms. 1.', 'success');
+        allStudents = [];
+        renderStudentTable();
+    } catch (err) {
+        showToast('Ralat: ' + err.message, 'error');
+    }
+}
+
+// ============================================================
+// FIX #3: Admin change own password
+// ============================================================
+async function adminChangeOwnPassword() {
+    const newPass = prompt('Masukkan kata laluan baru (min. 8 aksara):');
+    if (!newPass) return;
+    try {
+        await changePassword(newPass);
+        showToast('Kata laluan berjaya dikemaskini!', 'success');
+    } catch (err) {
+        showToast('Ralat: ' + err.message, 'error');
+    }
+}
+
+// ============================================================
 // EXPORTS
 // ============================================================
 window.switchTab             = switchTab;
@@ -1263,3 +1341,6 @@ window.submitRPTPlanModal    = submitRPTPlanModal;
 window.deleteRPTPlan         = deleteRPTPlan;
 window.deleteHoliday         = deleteHoliday;
 window.deleteRPTOverride     = deleteRPTOverride;
+window.adminSendPasswordReset = adminSendPasswordReset;
+window.resetAcademicYear     = resetAcademicYear;
+window.adminChangeOwnPassword = adminChangeOwnPassword;

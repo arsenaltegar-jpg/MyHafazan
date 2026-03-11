@@ -52,6 +52,8 @@ CREATE TABLE IF NOT EXISTS students (
     student_user_id UUID REFERENCES profiles(id) ON DELETE SET NULL,
     current_page INT DEFAULT 1,
     current_juz INT DEFAULT 1,
+    -- FIX #11: form_level is required for RPT auto-calculation per form
+    form_level INT CHECK (form_level BETWEEN 1 AND 5),
     photo_url TEXT,
     date_enrolled DATE DEFAULT CURRENT_DATE,
     is_active BOOLEAN DEFAULT TRUE,
@@ -102,6 +104,8 @@ CREATE TABLE IF NOT EXISTS announcements (
 CREATE INDEX idx_students_halaqah ON students(halaqah_id);
 CREATE INDEX idx_students_parent ON students(parent_id);
 CREATE INDEX idx_students_user ON students(student_user_id);
+-- FIX #11: Index for form_level (used in RPT queries)
+CREATE INDEX idx_students_form ON students(form_level);
 CREATE INDEX idx_hifz_logs_student ON hifz_logs(student_id);
 CREATE INDEX idx_hifz_logs_teacher ON hifz_logs(teacher_id);
 CREATE INDEX idx_hifz_logs_date ON hifz_logs(session_date);
@@ -341,7 +345,141 @@ ON CONFLICT DO NOTHING;
 -- VIEWS
 -- ============================================================
 
-CREATE OR REPLACE VIEW student_progress AS
+-- ============================================================
+-- FIX #11: MISSING TABLES (present in backup.sql but absent from original schema.sql)
+-- ============================================================
+
+-- RPT Plans (annual syllabus plan per form level)
+CREATE TABLE IF NOT EXISTS rpt_plans (
+    id SERIAL PRIMARY KEY,
+    form_level INT NOT NULL CHECK (form_level BETWEEN 1 AND 5),
+    year INT NOT NULL,
+    start_page INT NOT NULL,
+    end_page INT NOT NULL,
+    start_date DATE NOT NULL,
+    end_date DATE NOT NULL,
+    juz_start INT,
+    juz_end INT,
+    notes TEXT,
+    created_by UUID REFERENCES profiles(id),
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    CONSTRAINT rpt_plans_form_year_key UNIQUE (form_level, year),
+    CONSTRAINT rpt_plans_dates_check CHECK (end_date > start_date),
+    CONSTRAINT rpt_plans_form_check CHECK (form_level BETWEEN 1 AND 5),
+    CONSTRAINT rpt_plans_pages_check CHECK (end_page > start_page)
+);
+
+CREATE INDEX IF NOT EXISTS idx_rpt_plans_form_year ON rpt_plans(form_level, year);
+
+-- School Holidays (excluded from RPT day count)
+CREATE TABLE IF NOT EXISTS school_holidays (
+    id SERIAL PRIMARY KEY,
+    date DATE NOT NULL,
+    end_date DATE NOT NULL,
+    description TEXT NOT NULL,
+    holiday_type TEXT NOT NULL DEFAULT 'public_holiday',
+    created_by UUID REFERENCES profiles(id),
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    CONSTRAINT school_holidays_end_date_check CHECK (end_date >= date),
+    CONSTRAINT school_holidays_type_check CHECK (holiday_type IN ('public_holiday', 'school_holiday'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_school_holidays_date ON school_holidays(date);
+
+-- ============================================================
+-- HELPER FUNCTION: Count school days (weekdays minus holidays)
+-- ============================================================
+
+CREATE OR REPLACE FUNCTION count_school_days(p_start DATE, p_end DATE)
+RETURNS INTEGER AS $$
+  SELECT COUNT(*)::INTEGER
+  FROM generate_series(p_start, p_end, '1 day'::INTERVAL) d
+  WHERE
+    EXTRACT(dow FROM d) NOT IN (0, 6)
+    AND NOT EXISTS (
+      SELECT 1 FROM school_holidays h
+      WHERE d::DATE BETWEEN h.date AND h.end_date
+    );
+$$ LANGUAGE SQL STABLE;
+
+-- ============================================================
+-- HELPER FUNCTION: Get RPT target for a given form and date
+-- Checks manual override in rpt_targets first, then calculates
+-- automatically from rpt_plans using school day proration.
+-- ============================================================
+
+CREATE OR REPLACE FUNCTION get_rpt_target(p_form INT, p_date DATE)
+RETURNS INTEGER AS $$
+DECLARE
+  v_override INT;
+  v_plan     RECORD;
+  v_total_days INT;
+  v_elapsed    INT;
+BEGIN
+  -- 1. Check manual override (exact date + form_level match)
+  SELECT target_page_total INTO v_override
+  FROM rpt_targets
+  WHERE date = p_date
+    AND (form_level = p_form OR form_level IS NULL)
+  ORDER BY form_level NULLS LAST
+  LIMIT 1;
+  IF FOUND THEN RETURN v_override; END IF;
+
+  -- 2. Auto-calculate from rpt_plans
+  SELECT * INTO v_plan
+  FROM rpt_plans
+  WHERE form_level = p_form
+    AND EXTRACT(YEAR FROM p_date) = year
+    AND p_date BETWEEN start_date AND end_date
+  LIMIT 1;
+  IF NOT FOUND THEN RETURN NULL; END IF;
+
+  v_total_days := count_school_days(v_plan.start_date, v_plan.end_date);
+  IF v_total_days = 0 THEN RETURN v_plan.start_page; END IF;
+
+  v_elapsed := count_school_days(v_plan.start_date, LEAST(p_date, v_plan.end_date));
+  RETURN LEAST(
+    v_plan.start_page + ROUND(((v_plan.end_page - v_plan.start_page)::NUMERIC / v_total_days) * v_elapsed),
+    v_plan.end_page
+  );
+END;
+$$ LANGUAGE plpgsql STABLE SECURITY DEFINER;
+
+GRANT EXECUTE ON FUNCTION get_rpt_target(INT, DATE) TO authenticated;
+
+-- ============================================================
+-- RLS for new tables
+-- ============================================================
+
+ALTER TABLE rpt_plans ENABLE ROW LEVEL SECURITY;
+ALTER TABLE school_holidays ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Admins have full access to rpt_plans"
+    ON rpt_plans FOR ALL USING (get_my_role() = 'admin');
+
+CREATE POLICY "All authenticated users can read rpt_plans"
+    ON rpt_plans FOR SELECT USING (auth.uid() IS NOT NULL);
+
+CREATE POLICY "Admins have full access to school_holidays"
+    ON school_holidays FOR ALL USING (get_my_role() = 'admin');
+
+CREATE POLICY "All authenticated users can read school_holidays"
+    ON school_holidays FOR SELECT USING (auth.uid() IS NOT NULL);
+
+-- ============================================================
+-- FIX #5: student_progress VIEW — RLS workaround
+-- PostgreSQL views inherit the definer's permissions, bypassing
+-- row-level security on the underlying tables. To enforce RLS
+-- on the view, we recreate it with SECURITY INVOKER so it runs
+-- as the calling user and respects the RLS policies on students.
+-- ============================================================
+
+DROP VIEW IF EXISTS student_progress;
+
+CREATE OR REPLACE VIEW student_progress
+WITH (security_invoker = true)   -- FIX #5: Enforce RLS on underlying tables
+AS
 SELECT
     s.id,
     s.full_name,
@@ -351,22 +489,23 @@ SELECT
     s.halaqah_id,
     s.parent_id,
     s.student_user_id,
+    s.form_level,          -- FIX #11: expose form_level
     h.name AS halaqah_name,
     p.full_name AS teacher_name,
     par.full_name AS parent_name,
-    r.target_page_total,
-    (r.target_page_total - s.current_page) AS hutang,
+    get_rpt_target(s.form_level, CURRENT_DATE) AS target_page_total,
+    (get_rpt_target(s.form_level, CURRENT_DATE) - s.current_page) AS hutang,
     CASE
-        WHEN r.target_page_total IS NULL THEN 'no_rpt'
-        WHEN (r.target_page_total - s.current_page) <= 0 THEN 'ahead'
-        WHEN (r.target_page_total - s.current_page) <= 5 THEN 'warning'
+        WHEN s.form_level IS NULL THEN 'no_form'
+        WHEN get_rpt_target(s.form_level, CURRENT_DATE) IS NULL THEN 'no_rpt'
+        WHEN (get_rpt_target(s.form_level, CURRENT_DATE) - s.current_page) <= 0 THEN 'ahead'
+        WHEN (get_rpt_target(s.form_level, CURRENT_DATE) - s.current_page) <= 5 THEN 'warning'
         ELSE 'behind'
     END AS status
 FROM students s
 LEFT JOIN halaqahs h ON s.halaqah_id = h.id
 LEFT JOIN profiles p ON h.teacher_id = p.id
 LEFT JOIN profiles par ON s.parent_id = par.id
-LEFT JOIN rpt_targets r ON r.date = CURRENT_DATE
 WHERE s.is_active = TRUE;
 
 GRANT SELECT ON student_progress TO authenticated;
@@ -381,4 +520,7 @@ GRANT SELECT ON student_progress TO authenticated;
 -- 4. Google users are auto-assigned role='parent' by default
 -- 5. To make a Google user an admin, manually run:
 --    UPDATE profiles SET role = 'admin' WHERE id = '<user-uuid>';
+-- 6. FIX #5: The student_progress view now uses SECURITY INVOKER
+--    which requires Supabase PostgreSQL 15+. If on older version,
+--    add explicit WHERE filters per role in application code.
 -- ============================================================
