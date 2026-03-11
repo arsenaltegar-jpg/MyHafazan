@@ -734,8 +734,8 @@ tbody td{padding:11px 14px;font-size:13.5px;color:var(--s700);}
               <p style="margin-bottom:12px;">Pastikan fail CSV anda mengikut format berikut:</p>
               <div style="background:var(--s900);border-radius:9px;padding:14px;font-family:'DM Mono',monospace;font-size:12px;color:#86efac;margin-bottom:14px;overflow-x:auto;">
                 full_name,matric_no,form_level,halaqah_name,parent_email<br>
-                Ahmad Faris,MT2025001,1,Halaqah Al-Baqarah,<a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="4e2f2c3b0e2b232f2722602d2123">[email&#160;protected]</a><br>
-                Siti Aisyah,MT2025002,2,Halaqah Al-Fatihah,<a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="5a3b36331a3f373b333674393537">[email&#160;protected]</a>
+                Ahmad Faris,MT2025001,1,Halaqah Al-Baqarah,abu@email.com<br>
+                Siti Aisyah,MT2025002,2,Halaqah Al-Fatihah,ali@email.com
               </div>
               <div style="display:flex;flex-direction:column;gap:8px;">
                 <div style="display:flex;gap:8px;align-items:flex-start;"><i class="fas fa-check-circle" style="color:var(--g);margin-top:2px;flex-shrink:0;"></i><span><strong>full_name</strong> – Wajib.</span></div>
@@ -1070,7 +1070,7 @@ tbody td{padding:11px 14px;font-size:13.5px;color:var(--s700);}
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
       <div class="field">
         <label>Tingkatan</label>
-        <select id="planForm" required>
+        <select id="modalPlanForm" required>
           <option value="">– Pilih –</option>
           <option value="1">Tingkatan 1</option>
           <option value="2">Tingkatan 2</option>
@@ -1079,21 +1079,21 @@ tbody td{padding:11px 14px;font-size:13.5px;color:var(--s700);}
           <option value="5">Tingkatan 5</option>
         </select>
       </div>
-      <div class="field"><label>Tahun</label><input type="number" id="planYear" min="2024" max="2099" /></div>
+      <div class="field"><label>Tahun</label><input type="number" id="modalPlanYear" min="2024" max="2099" /></div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-      <div class="field"><label>Juz Mula</label><select id="planJuzStart"></select></div>
-      <div class="field"><label>Juz Akhir</label><select id="planJuzEnd"></select></div>
+      <div class="field"><label>Juz Mula</label><select id="modalPlanJuzStart"></select></div>
+      <div class="field"><label>Juz Akhir</label><select id="modalPlanJuzEnd"></select></div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-      <div class="field"><label>Muka Surat Mula</label><input type="number" id="planStartPage" min="1" max="604" /></div>
-      <div class="field"><label>Muka Surat Akhir</label><input type="number" id="planEndPage" min="1" max="604" /></div>
+      <div class="field"><label>Muka Surat Mula</label><input type="number" id="modalPlanStartPage" min="1" max="604" /></div>
+      <div class="field"><label>Muka Surat Akhir</label><input type="number" id="modalPlanEndPage" min="1" max="604" /></div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-      <div class="field"><label>Tarikh Mula</label><input type="date" id="planStartDate" /></div>
-      <div class="field"><label>Tarikh Akhir</label><input type="date" id="planEndDate" /></div>
+      <div class="field"><label>Tarikh Mula</label><input type="date" id="modalPlanStartDate" /></div>
+      <div class="field"><label>Tarikh Akhir</label><input type="date" id="modalPlanEndDate" /></div>
     </div>
-    <div class="field"><label>Nota <span>(pilihan)</span></label><input type="text" id="planNotes" placeholder="cth: Semester 1 + 2" /></div>
+    <div class="field"><label>Nota <span>(pilihan)</span></label><input type="text" id="modalPlanNotes" placeholder="cth: Semester 1 + 2" /></div>
     <div class="modal-footer">
       <button class="btn-primary" onclick="submitRPTPlanModal()"><i class="fas fa-floppy-disk"></i> Simpan</button>
       <button class="btn-cancel" onclick="closeModal('rptPlanModal')">Batal</button>
@@ -1104,28 +1104,46 @@ tbody td{padding:11px 14px;font-size:13.5px;color:var(--s700);}
 <!-- ════════ TOAST ════════ -->
 <div class="toast" id="toast"></div>
 
-<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
 <script src="auth.js"></script>
 <script src="admin.js"></script>
 <script>
+  /* ── Date in topbar ── */
   document.getElementById('topbarDate').textContent =
-    new Date().toLocaleDateString('ms-MY',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
+    new Date().toLocaleDateString('ms-MY', {
+      weekday: 'long', day: '2-digit', month: 'long', year: 'numeric'
+    });
 
+  /* ── Mobile sidebar toggle ── */
   const menuToggle = document.getElementById('menuToggle');
-  const sidebar = document.getElementById('sidebar');
-  menuToggle?.addEventListener('click', () => sidebar.classList.toggle('open'));
-  document.addEventListener('click', (e) => {
-    if (window.innerWidth <= 900 && sidebar.classList.contains('open') &&
-        !sidebar.contains(e.target) && !menuToggle.contains(e.target)) {
+  const sidebar    = document.getElementById('sidebar');
+
+  menuToggle.addEventListener('click', function(e) {
+    e.stopPropagation();
+    sidebar.classList.toggle('open');
+  });
+
+  /* Close sidebar when clicking outside */
+  document.addEventListener('click', function(e) {
+    if (
+      window.innerWidth <= 900 &&
+      sidebar.classList.contains('open') &&
+      !sidebar.contains(e.target) &&
+      !menuToggle.contains(e.target)
+    ) {
       sidebar.classList.remove('open');
     }
   });
-  sidebar.querySelectorAll('.nav-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      if (window.innerWidth <= 900) sidebar.classList.remove('open');
+
+  /* Close sidebar when a nav item is tapped on mobile */
+  sidebar.querySelectorAll('.nav-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      if (window.innerWidth <= 900) {
+        sidebar.classList.remove('open');
+      }
     });
   });
-
-  // RPT sub-tab switcher
-  function switchRptTab(tab) {
+</script>
+</body>
+</html>
