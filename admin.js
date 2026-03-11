@@ -31,32 +31,55 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     populateNavProfile(profile);
     initNavigation();
-    initJuzSelects();          // populate juz dropdowns on page load
+    initJuzSelects();
     await loadDropdownData();
     await loadDashboard();
     initRealtime();
     bindForms();
 });
 
-// Populate all juz selects on the page (add form + modal)
+// Populate juz selects — inline add form only (modal uses modalPlan* IDs)
 function initJuzSelects() {
     const opts = Array.from({length: 30}, (_, i) => i + 1)
         .map(j => `<option value="${j}">Juz ${j}</option>`).join('');
 
     // Inline add form inside rpt-pane-plans
-    const planPane = document.getElementById('rpt-pane-plans');
-    if (planPane) {
-        const addStart = planPane.querySelector('#planJuzStart');
-        const addEnd   = planPane.querySelector('#planJuzEnd');
-        if (addStart) {
-            addStart.innerHTML = opts;
-            addStart.addEventListener('change', () => syncPagesFromJuz(planPane));
-        }
-        if (addEnd) {
-            addEnd.innerHTML = opts;
-            addEnd.addEventListener('change', () => syncPagesFromJuz(planPane));
-        }
+    const addStart = document.querySelector('#rpt-pane-plans #planJuzStart');
+    const addEnd   = document.querySelector('#rpt-pane-plans #planJuzEnd');
+    if (addStart) {
+        addStart.innerHTML = opts;
+        addStart.addEventListener('change', syncInlinePages);
     }
+    if (addEnd) {
+        addEnd.innerHTML = opts;
+        addEnd.addEventListener('change', syncInlinePages);
+    }
+
+    // Modal juz selects
+    const modalStart = document.getElementById('modalPlanJuzStart');
+    const modalEnd   = document.getElementById('modalPlanJuzEnd');
+    if (modalStart) {
+        modalStart.innerHTML = opts;
+        modalStart.addEventListener('change', syncModalPages);
+    }
+    if (modalEnd) {
+        modalEnd.innerHTML = opts;
+        modalEnd.addEventListener('change', syncModalPages);
+    }
+}
+
+function syncInlinePages() {
+    const js = parseInt(document.querySelector('#rpt-pane-plans #planJuzStart')?.value);
+    const je = parseInt(document.querySelector('#rpt-pane-plans #planJuzEnd')?.value);
+    if (js) document.querySelector('#rpt-pane-plans #planStartPage').value = juzToStartPage(js);
+    if (je) document.querySelector('#rpt-pane-plans #planEndPage').value   = juzToEndPage(je);
+}
+
+function syncModalPages() {
+    const js = parseInt(document.getElementById('modalPlanJuzStart')?.value);
+    const je = parseInt(document.getElementById('modalPlanJuzEnd')?.value);
+    if (js) document.getElementById('modalPlanStartPage').value = juzToStartPage(js);
+    if (je) document.getElementById('modalPlanEndPage').value   = juzToEndPage(je);
 }
 
 // ============================================================
@@ -67,9 +90,6 @@ function initNavigation() {
     document.querySelectorAll('[data-tab]').forEach(btn => {
         btn.addEventListener('click', () => {
             switchTab(btn.dataset.tab);
-            if (window.innerWidth <= 900) {
-                document.getElementById('sidebar').classList.remove('open');
-            }
         });
     });
 }
@@ -548,7 +568,7 @@ async function removeUser(id, name) {
 }
 
 // ============================================================
-// STUDENT EDIT MODAL (now includes form_level)
+// STUDENT EDIT MODAL
 // ============================================================
 
 async function openEditStudentModal(id, name, page, juz, halaqahId, formLevel) {
@@ -667,68 +687,63 @@ async function loadRPTPlans() {
     }).join('');
 }
 
+// Opens the RPT Plan MODAL (uses modal* prefixed IDs to avoid conflicts with inline form)
 function openRPTPlanModal(id=null, form=1, year=null, startPage=1, endPage=20, startDate='', endDate='', juzStart=null, juzEnd=null) {
     const currentYear = new Date().getFullYear();
-    const modal = document.getElementById('rptPlanModal');
 
-    modal.querySelector('#planId').value        = id || '';
-    modal.querySelector('#planYear').value      = year || currentYear;
-    modal.querySelector('#planStartDate').value = startDate || `${currentYear}-01-06`;
-    modal.querySelector('#planEndDate').value   = endDate   || `${currentYear}-11-14`;
-    modal.querySelector('#planNotes').value     = '';
-    modal.querySelector('#planStartPage').value = startPage;
-    modal.querySelector('#planEndPage').value   = endPage;
+    document.getElementById('planId').value              = id || '';
+    document.getElementById('modalPlanYear').value       = year || currentYear;
+    document.getElementById('modalPlanStartDate').value  = startDate || `${currentYear}-01-06`;
+    document.getElementById('modalPlanEndDate').value    = endDate   || `${currentYear}-11-14`;
+    document.getElementById('modalPlanNotes').value      = '';
+    document.getElementById('modalPlanStartPage').value  = startPage;
+    document.getElementById('modalPlanEndPage').value    = endPage;
 
-    const selF = modal.querySelector('#planForm');
+    const selF = document.getElementById('modalPlanForm');
     if (selF) selF.value = form;
 
-    // Options already populated by initJuzSelects — just set values
-    const selJs = modal.querySelector('#planJuzStart');
-    const selJe = modal.querySelector('#planJuzEnd');
-    if (selJs && selJe) {
-        // Ensure options exist in modal (they share IDs with inline form, so populate if empty)
-        if (!selJs.options.length) {
-            const opts = Array.from({length:30},(_,i)=>i+1)
-                .map(j => `<option value="${j}">Juz ${j}</option>`).join('');
-            selJs.innerHTML = opts;
-            selJe.innerHTML = opts;
-        }
-        selJs.value = juzStart || 1;
-        selJe.value = juzEnd   || 1;
-        selJs.onchange = () => syncPagesFromJuz(modal);
-        selJe.onchange = () => syncPagesFromJuz(modal);
-        if (juzStart) syncPagesFromJuz(modal);
-    }
+    const selJs = document.getElementById('modalPlanJuzStart');
+    const selJe = document.getElementById('modalPlanJuzEnd');
+    if (selJs) selJs.value = juzStart || 1;
+    if (selJe) selJe.value = juzEnd   || 1;
 
     document.getElementById('rptPlanModalTitle').textContent = id ? 'Kemaskini Pelan RPT' : 'Tambah Pelan RPT Baru';
     openModal('rptPlanModal');
 }
 
-// ctx = container element (modal or the inline form card) so we target the right selects
-function syncPagesFromJuz(ctx) {
-    const container = ctx || document.getElementById('rpt-pane-plans');
-    const js = parseInt(container.querySelector('#planJuzStart')?.value);
-    const je = parseInt(container.querySelector('#planJuzEnd')?.value);
-    if (js) container.querySelector('#planStartPage').value = juzToStartPage(js);
-    if (je) container.querySelector('#planEndPage').value   = juzToEndPage(je);
-}
-
+// Handles BOTH the inline form submit AND the modal submit button
 async function submitRPTPlanModal() {
-    // Read from modal if open, otherwise from inline form
-    const modal     = document.getElementById('rptPlanModal');
-    const isModal   = modal?.classList.contains('open');
-    const ctx       = isModal ? modal : document.getElementById('rpt-pane-plans');
+    const modal   = document.getElementById('rptPlanModal');
+    const isModal = modal?.classList.contains('open');
 
-    const id        = ctx.querySelector('#planId')?.value || '';
-    const form      = parseInt(ctx.querySelector('#planForm').value);
-    const year      = parseInt(ctx.querySelector('#planYear').value);
-    const startPage = parseInt(ctx.querySelector('#planStartPage').value);
-    const endPage   = parseInt(ctx.querySelector('#planEndPage').value);
-    const startDate = ctx.querySelector('#planStartDate').value;
-    const endDate   = ctx.querySelector('#planEndDate').value;
-    const juzStart  = ctx.querySelector('#planJuzStart')?.value ? parseInt(ctx.querySelector('#planJuzStart').value) : null;
-    const juzEnd    = ctx.querySelector('#planJuzEnd')?.value   ? parseInt(ctx.querySelector('#planJuzEnd').value)   : null;
-    const notes     = ctx.querySelector('#planNotes')?.value.trim() || null;
+    let form, year, startPage, endPage, startDate, endDate, juzStart, juzEnd, notes, id;
+
+    if (isModal) {
+        // Reading from modal (modal* prefixed IDs)
+        id        = document.getElementById('planId')?.value || '';
+        form      = parseInt(document.getElementById('modalPlanForm')?.value);
+        year      = parseInt(document.getElementById('modalPlanYear')?.value);
+        startPage = parseInt(document.getElementById('modalPlanStartPage')?.value);
+        endPage   = parseInt(document.getElementById('modalPlanEndPage')?.value);
+        startDate = document.getElementById('modalPlanStartDate')?.value;
+        endDate   = document.getElementById('modalPlanEndDate')?.value;
+        juzStart  = document.getElementById('modalPlanJuzStart')?.value ? parseInt(document.getElementById('modalPlanJuzStart').value) : null;
+        juzEnd    = document.getElementById('modalPlanJuzEnd')?.value   ? parseInt(document.getElementById('modalPlanJuzEnd').value)   : null;
+        notes     = document.getElementById('modalPlanNotes')?.value.trim() || null;
+    } else {
+        // Reading from inline form (plain IDs scoped inside #rpt-pane-plans)
+        const pane = document.getElementById('rpt-pane-plans');
+        id        = '';
+        form      = parseInt(pane.querySelector('#planForm')?.value);
+        year      = parseInt(pane.querySelector('#planYear')?.value);
+        startPage = parseInt(pane.querySelector('#planStartPage')?.value);
+        endPage   = parseInt(pane.querySelector('#planEndPage')?.value);
+        startDate = pane.querySelector('#planStartDate')?.value;
+        endDate   = pane.querySelector('#planEndDate')?.value;
+        juzStart  = pane.querySelector('#planJuzStart')?.value ? parseInt(pane.querySelector('#planJuzStart').value) : null;
+        juzEnd    = pane.querySelector('#planJuzEnd')?.value   ? parseInt(pane.querySelector('#planJuzEnd').value)   : null;
+        notes     = pane.querySelector('#planNotes')?.value.trim() || null;
+    }
 
     if (!form || !year || !startPage || !endPage || !startDate || !endDate) {
         showToast('Sila lengkapkan semua medan wajib.', 'error'); return;
@@ -790,7 +805,6 @@ async function loadHolidayList() {
         const dateDisplay = isSingleDay
             ? formatDateMY(h.date)
             : `${formatDateMY(h.date)} – ${formatDateMY(h.end_date)}`;
-        // Count weekdays in range for display
         let weekdays = 0;
         for (let d = new Date(h.date); d <= new Date(h.end_date); d.setDate(d.getDate() + 1)) {
             const dow = d.getDay();
@@ -1106,7 +1120,7 @@ function bindForms() {
         allStudents = [];
     });
 
-    // RPT Plan modal form
+    // RPT Plan inline form submit
     document.getElementById('formAddRPTPlan')?.addEventListener('submit', async e => {
         e.preventDefault();
         await submitRPTPlanModal();
@@ -1116,7 +1130,7 @@ function bindForms() {
     document.getElementById('formAddHoliday')?.addEventListener('submit', async e => {
         e.preventDefault();
         const date    = document.getElementById('holidayDate').value;
-        const endDate = document.getElementById('holidayEndDate').value || date; // fallback = same day
+        const endDate = document.getElementById('holidayEndDate').value || date;
         const desc    = document.getElementById('holidayDesc').value.trim();
         const type    = document.getElementById('holidayType').value;
         if (!date || !desc) { showToast('Sila isi tarikh dan keterangan.', 'error'); return; }
@@ -1188,6 +1202,19 @@ function applyStudentFilters() {
 }
 
 // ============================================================
+// HELPERS
+// ============================================================
+
+function getTodayDate() {
+    return new Date().toISOString().split('T')[0];
+}
+
+function formatDateMY(d) {
+    if (!d) return '–';
+    return new Date(d).toLocaleDateString('ms-MY', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
+// ============================================================
 // MODAL HELPERS
 // ============================================================
 
@@ -1234,6 +1261,5 @@ window.deleteAnnouncement    = deleteAnnouncement;
 window.openRPTPlanModal      = openRPTPlanModal;
 window.submitRPTPlanModal    = submitRPTPlanModal;
 window.deleteRPTPlan         = deleteRPTPlan;
-window.syncPagesFromJuz      = syncPagesFromJuz;
 window.deleteHoliday         = deleteHoliday;
 window.deleteRPTOverride     = deleteRPTOverride;
