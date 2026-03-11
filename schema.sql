@@ -11,8 +11,15 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 -- ENUMS
 -- ============================================================
 
-CREATE TYPE user_role AS ENUM ('admin', 'teacher', 'parent', 'student');
-CREATE TYPE log_type AS ENUM ('jadid', 'murajaah_u', 'murajaah_q');
+DO $$ BEGIN
+  CREATE TYPE user_role AS ENUM ('admin', 'teacher', 'parent', 'student');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  CREATE TYPE log_type AS ENUM ('jadid', 'murajaah_u', 'murajaah_q');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 -- ============================================================
 -- TABLES
@@ -101,15 +108,15 @@ CREATE TABLE IF NOT EXISTS announcements (
 -- INDEXES
 -- ============================================================
 
-CREATE INDEX idx_students_halaqah ON students(halaqah_id);
-CREATE INDEX idx_students_parent ON students(parent_id);
-CREATE INDEX idx_students_user ON students(student_user_id);
+CREATE INDEX IF NOT EXISTS idx_students_halaqah ON students(halaqah_id);
+CREATE INDEX IF NOT EXISTS idx_students_parent ON students(parent_id);
+CREATE INDEX IF NOT EXISTS idx_students_user ON students(student_user_id);
 -- FIX #11: Index for form_level (used in RPT queries)
-CREATE INDEX idx_students_form ON students(form_level);
-CREATE INDEX idx_hifz_logs_student ON hifz_logs(student_id);
-CREATE INDEX idx_hifz_logs_teacher ON hifz_logs(teacher_id);
-CREATE INDEX idx_hifz_logs_date ON hifz_logs(session_date);
-CREATE INDEX idx_rpt_targets_date ON rpt_targets(date);
+CREATE INDEX IF NOT EXISTS idx_students_form ON students(form_level);
+CREATE INDEX IF NOT EXISTS idx_hifz_logs_student ON hifz_logs(student_id);
+CREATE INDEX IF NOT EXISTS idx_hifz_logs_teacher ON hifz_logs(teacher_id);
+CREATE INDEX IF NOT EXISTS idx_hifz_logs_date ON hifz_logs(session_date);
+CREATE INDEX IF NOT EXISTS idx_rpt_targets_date ON rpt_targets(date);
 
 -- ============================================================
 -- TRIGGERS: Auto-update updated_at
@@ -123,10 +130,13 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+-- Drop before recreate to make idempotent
+DROP TRIGGER IF EXISTS trigger_profiles_updated_at ON profiles;
 CREATE TRIGGER trigger_profiles_updated_at
     BEFORE UPDATE ON profiles
     FOR EACH ROW EXECUTE FUNCTION update_updated_at();
 
+DROP TRIGGER IF EXISTS trigger_students_updated_at ON students;
 CREATE TRIGGER trigger_students_updated_at
     BEFORE UPDATE ON students
     FOR EACH ROW EXECUTE FUNCTION update_updated_at();
@@ -164,6 +174,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
     AFTER INSERT ON auth.users
     FOR EACH ROW EXECUTE FUNCTION handle_new_user();
@@ -197,18 +208,22 @@ $$ LANGUAGE SQL SECURITY DEFINER STABLE;
 -- RLS POLICIES: profiles
 -- ============================================================
 
+DROP POLICY IF EXISTS "Admins have full access to profiles" ON profiles;
 CREATE POLICY "Admins have full access to profiles"
     ON profiles FOR ALL
     USING (get_my_role() = 'admin');
 
+DROP POLICY IF EXISTS "Users can view own profile" ON profiles;
 CREATE POLICY "Users can view own profile"
     ON profiles FOR SELECT
     USING (id = auth.uid());
 
+DROP POLICY IF EXISTS "Users can update own profile" ON profiles;
 CREATE POLICY "Users can update own profile"
     ON profiles FOR UPDATE
     USING (id = auth.uid());
 
+DROP POLICY IF EXISTS "Teachers can view all profiles" ON profiles;
 CREATE POLICY "Teachers can view all profiles"
     ON profiles FOR SELECT
     USING (get_my_role() = 'teacher');
@@ -217,14 +232,17 @@ CREATE POLICY "Teachers can view all profiles"
 -- RLS POLICIES: halaqahs
 -- ============================================================
 
+DROP POLICY IF EXISTS "Admins have full access to halaqahs" ON halaqahs;
 CREATE POLICY "Admins have full access to halaqahs"
     ON halaqahs FOR ALL
     USING (get_my_role() = 'admin');
 
+DROP POLICY IF EXISTS "Teachers can view their own halaqah" ON halaqahs;
 CREATE POLICY "Teachers can view their own halaqah"
     ON halaqahs FOR SELECT
     USING (teacher_id = auth.uid() OR get_my_role() = 'teacher');
 
+DROP POLICY IF EXISTS "Parents and students can view halaqahs" ON halaqahs;
 CREATE POLICY "Parents and students can view halaqahs"
     ON halaqahs FOR SELECT
     USING (get_my_role() IN ('parent', 'student'));
@@ -233,10 +251,12 @@ CREATE POLICY "Parents and students can view halaqahs"
 -- RLS POLICIES: students
 -- ============================================================
 
+DROP POLICY IF EXISTS "Admins have full access to students" ON students;
 CREATE POLICY "Admins have full access to students"
     ON students FOR ALL
     USING (get_my_role() = 'admin');
 
+DROP POLICY IF EXISTS "Teachers can read/write students in their halaqah" ON students;
 CREATE POLICY "Teachers can read/write students in their halaqah"
     ON students FOR ALL
     USING (
@@ -244,12 +264,14 @@ CREATE POLICY "Teachers can read/write students in their halaqah"
         AND get_my_role() = 'teacher'
     );
 
+DROP POLICY IF EXISTS "Parents can view their own children" ON students;
 CREATE POLICY "Parents can view their own children"
     ON students FOR SELECT
     USING (parent_id = auth.uid());
 
 -- FIX: Students with role='student' can view their own record
 -- via student_user_id column
+DROP POLICY IF EXISTS "Students can view their own record" ON students;
 CREATE POLICY "Students can view their own record"
     ON students FOR SELECT
     USING (student_user_id = auth.uid() AND get_my_role() = 'student');
@@ -258,10 +280,12 @@ CREATE POLICY "Students can view their own record"
 -- RLS POLICIES: hifz_logs
 -- ============================================================
 
+DROP POLICY IF EXISTS "Admins have full access to hifz_logs" ON hifz_logs;
 CREATE POLICY "Admins have full access to hifz_logs"
     ON hifz_logs FOR ALL
     USING (get_my_role() = 'admin');
 
+DROP POLICY IF EXISTS "Teachers can manage logs for their students" ON hifz_logs;
 CREATE POLICY "Teachers can manage logs for their students"
     ON hifz_logs FOR ALL
     USING (
@@ -271,6 +295,7 @@ CREATE POLICY "Teachers can manage logs for their students"
         )
     );
 
+DROP POLICY IF EXISTS "Parents can view logs for their children" ON hifz_logs;
 CREATE POLICY "Parents can view logs for their children"
     ON hifz_logs FOR SELECT
     USING (
@@ -280,6 +305,7 @@ CREATE POLICY "Parents can view logs for their children"
     );
 
 -- FIX: Students can view their own logs
+DROP POLICY IF EXISTS "Students can view their own logs" ON hifz_logs;
 CREATE POLICY "Students can view their own logs"
     ON hifz_logs FOR SELECT
     USING (
@@ -293,10 +319,12 @@ CREATE POLICY "Students can view their own logs"
 -- RLS POLICIES: rpt_targets
 -- ============================================================
 
+DROP POLICY IF EXISTS "Admins have full access to rpt_targets" ON rpt_targets;
 CREATE POLICY "Admins have full access to rpt_targets"
     ON rpt_targets FOR ALL
     USING (get_my_role() = 'admin');
 
+DROP POLICY IF EXISTS "All authenticated users can read rpt_targets" ON rpt_targets;
 CREATE POLICY "All authenticated users can read rpt_targets"
     ON rpt_targets FOR SELECT
     USING (auth.uid() IS NOT NULL);
@@ -305,10 +333,12 @@ CREATE POLICY "All authenticated users can read rpt_targets"
 -- RLS POLICIES: announcements
 -- ============================================================
 
+DROP POLICY IF EXISTS "Admins have full access to announcements" ON announcements;
 CREATE POLICY "Admins have full access to announcements"
     ON announcements FOR ALL
     USING (get_my_role() = 'admin');
 
+DROP POLICY IF EXISTS "All users can read active announcements" ON announcements;
 CREATE POLICY "All users can read active announcements"
     ON announcements FOR SELECT
     USING (
@@ -455,15 +485,19 @@ GRANT EXECUTE ON FUNCTION get_rpt_target(INT, DATE) TO authenticated;
 ALTER TABLE rpt_plans ENABLE ROW LEVEL SECURITY;
 ALTER TABLE school_holidays ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Admins have full access to rpt_plans" ON rpt_plans;
 CREATE POLICY "Admins have full access to rpt_plans"
     ON rpt_plans FOR ALL USING (get_my_role() = 'admin');
 
+DROP POLICY IF EXISTS "All authenticated users can read rpt_plans" ON rpt_plans;
 CREATE POLICY "All authenticated users can read rpt_plans"
     ON rpt_plans FOR SELECT USING (auth.uid() IS NOT NULL);
 
+DROP POLICY IF EXISTS "Admins have full access to school_holidays" ON school_holidays;
 CREATE POLICY "Admins have full access to school_holidays"
     ON school_holidays FOR ALL USING (get_my_role() = 'admin');
 
+DROP POLICY IF EXISTS "All authenticated users can read school_holidays" ON school_holidays;
 CREATE POLICY "All authenticated users can read school_holidays"
     ON school_holidays FOR SELECT USING (auth.uid() IS NOT NULL);
 
