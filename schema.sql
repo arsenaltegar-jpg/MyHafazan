@@ -85,12 +85,14 @@ CREATE TABLE IF NOT EXISTS hifz_logs (
 -- RPT Targets (Daily syllabus targets)
 CREATE TABLE IF NOT EXISTS rpt_targets (
     id SERIAL PRIMARY KEY,
-    date DATE UNIQUE NOT NULL,
+    date DATE NOT NULL,
     target_page_total INT NOT NULL,
     juz_reference INT,
     notes TEXT,
+    form_level INT CHECK (form_level BETWEEN 1 AND 5),
     created_by UUID REFERENCES profiles(id),
-    created_at TIMESTAMPTZ DEFAULT NOW()
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    CONSTRAINT rpt_targets_date_form_key UNIQUE (date, form_level)
 );
 
 -- Announcements
@@ -117,6 +119,10 @@ CREATE INDEX IF NOT EXISTS idx_hifz_logs_student ON hifz_logs(student_id);
 CREATE INDEX IF NOT EXISTS idx_hifz_logs_teacher ON hifz_logs(teacher_id);
 CREATE INDEX IF NOT EXISTS idx_hifz_logs_date ON hifz_logs(session_date);
 CREATE INDEX IF NOT EXISTS idx_rpt_targets_date ON rpt_targets(date);
+-- Partial unique index for rows where form_level IS NULL (global overrides)
+-- This makes ON CONFLICT (date, form_level) work correctly for NULL form_level rows
+CREATE UNIQUE INDEX IF NOT EXISTS idx_rpt_targets_date_null_form
+    ON rpt_targets(date) WHERE form_level IS NULL;
 
 -- ============================================================
 -- TRIGGERS: Auto-update updated_at
@@ -354,17 +360,17 @@ CREATE POLICY "All users can read active announcements"
 -- In production, create admin via Supabase Auth dashboard, then:
 -- UPDATE profiles SET role = 'admin' WHERE id = '<admin-user-uuid>';
 
--- Sample RPT Targets
-INSERT INTO rpt_targets (date, target_page_total, juz_reference, notes) VALUES
-    (CURRENT_DATE,     45, 3, 'Target Juzuk 3'),
-    (CURRENT_DATE + 1, 47, 3, 'Target Juzuk 3'),
-    (CURRENT_DATE + 2, 49, 3, 'Target Juzuk 3'),
-    (CURRENT_DATE + 3, 51, 3, 'Target Juzuk 3'),
-    (CURRENT_DATE + 4, 53, 3, 'Masuk Juzuk 3 akhir'),
-    (CURRENT_DATE + 5, 55, 3, 'Habis Juzuk 3'),
-    (CURRENT_DATE + 6, 57, 4, 'Mula Juzuk 4'),
-    (CURRENT_DATE + 7, 59, 4, 'Target Juzuk 4')
-ON CONFLICT (date) DO NOTHING;
+-- Sample RPT Targets (form_level NULL = applies to all forms)
+INSERT INTO rpt_targets (date, target_page_total, juz_reference, notes, form_level) VALUES
+    (CURRENT_DATE,     45, 3, 'Target Juzuk 3', NULL),
+    (CURRENT_DATE + 1, 47, 3, 'Target Juzuk 3', NULL),
+    (CURRENT_DATE + 2, 49, 3, 'Target Juzuk 3', NULL),
+    (CURRENT_DATE + 3, 51, 3, 'Target Juzuk 3', NULL),
+    (CURRENT_DATE + 4, 53, 3, 'Masuk Juzuk 3 akhir', NULL),
+    (CURRENT_DATE + 5, 55, 3, 'Habis Juzuk 3', NULL),
+    (CURRENT_DATE + 6, 57, 4, 'Mula Juzuk 4', NULL),
+    (CURRENT_DATE + 7, 59, 4, 'Target Juzuk 4', NULL)
+ON CONFLICT (date, form_level) DO NOTHING;
 
 -- Sample announcement
 INSERT INTO announcements (title, body, target_role, is_active) VALUES
