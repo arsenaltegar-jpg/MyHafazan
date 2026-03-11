@@ -491,13 +491,13 @@ async function deleteHalaqah(id) {
 async function loadTeachersTable() {
     const tbody = document.getElementById('teacherTableBody');
     if (!tbody) return;
-    tbody.innerHTML = '<tr class="empty-row"><td colspan="4"><i class="fas fa-spinner fa-spin"></i></td></tr>';
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="5"><i class="fas fa-spinner fa-spin"></i></td></tr>';
 
     const { data: teachers } = await supabase.from('profiles').select('id, full_name, phone').eq('role','teacher').order('full_name');
     allTeachers = teachers || [];
 
     if (!allTeachers.length) {
-        tbody.innerHTML = '<tr class="empty-row"><td colspan="4">Tiada murabbi berdaftar.</td></tr>';
+        tbody.innerHTML = '<tr class="empty-row"><td colspan="5">Tiada murabbi berdaftar.</td></tr>';
         return;
     }
 
@@ -510,7 +510,7 @@ async function loadTeachersTable() {
           <td><div class="td-name"><div class="av-sm" style="background:linear-gradient(135deg,var(--p),var(--pl));">${(t.full_name||'?')[0]}</div>${t.full_name}</div></td>
           <td style="color:var(--s500);">${t.phone || '–'}</td>
           <td>${hMap[t.id] ? `<span class="badge badge-g">${hMap[t.id]}</span>` : '<span style="color:var(--s400);">Tiada halaqah</span>'}</td>
-          <td><button class="btn-sm btn-edit" onclick="adminSendPasswordReset(${JSON.stringify(t.email || '')},${JSON.stringify(t.full_name || '')})"><i class="fas fa-key"></i> Reset</button></td>
+          <td><button class="btn-sm btn-edit" onclick="promptAndResetPassword(${JSON.stringify(t.full_name||'')})"><i class="fas fa-key"></i> Reset</button></td>
           <td><button class="btn-sm btn-danger" onclick="removeUser('${t.id}','${(t.full_name||'').replace(/'/g,"\\'")}')"><i class="fas fa-user-minus"></i> Alih Keluar</button></td>
         </tr>`).join('');
 }
@@ -1257,16 +1257,25 @@ function showToast(msg, type = 'success') {
 }
 
 // ============================================================
-// FIX #15: ADMIN — Send password reset email to a user
-// (Supabase anon key can't call admin.updateUserById — use resetPasswordForEmail)
+// FIX #15: ADMIN — Send password reset email
+// profiles table has no email column (email lives in auth.users
+// which the anon key cannot read). So we prompt the admin to
+// enter the teacher/parent's email address manually.
 // ============================================================
 
+async function promptAndResetPassword(userName) {
+    const email = prompt(`Masukkan emel ${userName} untuk hantar reset kata laluan:`);
+    if (!email || !email.trim()) return;
+    await adminSendPasswordReset(email.trim(), userName);
+}
+
 async function adminSendPasswordReset(email, userName) {
-    if (!confirm(`Hantar e-mel reset kata laluan kepada ${userName}?`)) return;
+    if (!email) { showToast('Emel tidak ditemui.', 'error'); return; }
     try {
-        const { error } = await supabase.auth.resetPasswordForEmail(email, {
-            redirectTo: window.location.href.split('#')[0].split('?')[0].replace('admin.html', 'reset-password.html'),
-        });
+        const redirectTo = window.location.href
+            .split('#')[0].split('?')[0]
+            .replace('admin.html', 'reset-password.html');
+        const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
         if (error) throw error;
         showToast(`E-mel reset dihantar kepada ${userName}.`, 'success');
     } catch (err) {
@@ -1342,5 +1351,6 @@ window.deleteRPTPlan         = deleteRPTPlan;
 window.deleteHoliday         = deleteHoliday;
 window.deleteRPTOverride     = deleteRPTOverride;
 window.adminSendPasswordReset = adminSendPasswordReset;
+window.promptAndResetPassword  = promptAndResetPassword;
 window.resetAcademicYear     = resetAcademicYear;
 window.adminChangeOwnPassword = adminChangeOwnPassword;
