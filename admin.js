@@ -102,6 +102,20 @@ function switchTab(tab) {
 }
 
 // ============================================================
+// RPT SUB-TAB SWITCHER
+// ============================================================
+
+function switchRptTab(tab) {
+    document.querySelectorAll('.rpt-tab-btn').forEach(b => {
+        const onclick = b.getAttribute('onclick') || '';
+        b.classList.toggle('active', onclick.includes(`'${tab}'`));
+    });
+    document.querySelectorAll('.rpt-tab-pane').forEach(p => {
+        p.classList.toggle('active', p.id === `rpt-pane-${tab}`);
+    });
+}
+
+// ============================================================
 // DROPDOWN DATA (shared cache)
 // ============================================================
 
@@ -1200,6 +1214,7 @@ function showToast(msg, type = 'success') {
 // EXPORTS
 // ============================================================
 window.switchTab             = switchTab;
+window.switchRptTab          = switchRptTab;
 window.showToast             = showToast;
 window.openModal             = openModal;
 window.closeModal            = closeModal;
