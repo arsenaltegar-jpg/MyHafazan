@@ -1143,4 +1143,18 @@ tbody td{padding:11px 14px;font-size:13.5px;color:var(--s700);}
       !sidebar.contains(e.target) &&
       !menuToggle.contains(e.target)
     ) {
-      sid
+      sidebar.classList.remove('open');
+    }
+  });
+
+  /* Close sidebar when a nav tab is clicked (mobile UX) */
+  document.querySelectorAll('.nav-btn[data-tab]').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      if (window.innerWidth <= 900) {
+        sidebar.classList.remove('open');
+      }
+    });
+  });
+</script>
+</body>
+</html>
