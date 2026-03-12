@@ -510,9 +510,14 @@ async function loadTeachersTable() {
           <td><div class="td-name"><div class="av-sm" style="background:linear-gradient(135deg,var(--p),var(--pl));">${(t.full_name||'?')[0]}</div>${t.full_name}</div></td>
           <td style="color:var(--s500);">${t.phone || '–'}</td>
           <td>${hMap[t.id] ? `<span class="badge badge-g">${hMap[t.id]}</span>` : '<span style="color:var(--s400);">Tiada halaqah</span>'}</td>
-          <td><button class="btn-sm btn-edit" onclick="promptAndResetPassword(${JSON.stringify(t.full_name||'')})"><i class="fas fa-key"></i> Reset</button></td>
+          <td><button class="btn-sm btn-edit btn-reset-pw" data-name="${(t.full_name||'').replace(/"/g,'&quot;')}"><i class="fas fa-key"></i> Reset</button></td>
           <td><button class="btn-sm btn-danger" onclick="removeUser('${t.id}','${(t.full_name||'').replace(/'/g,"\\'")}')"><i class="fas fa-user-minus"></i> Alih Keluar</button></td>
         </tr>`).join('');
+
+    // Event delegation — avoids inline onclick string-escaping issues
+    tbody.querySelectorAll('.btn-reset-pw').forEach(btn => {
+        btn.addEventListener('click', () => promptAndResetPassword(btn.dataset.name));
+    });
 }
 
 // ============================================================
