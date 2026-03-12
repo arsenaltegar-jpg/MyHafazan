@@ -1264,9 +1264,15 @@ function showToast(msg, type = 'success') {
 // ============================================================
 
 async function promptAndResetPassword(userName) {
-    const email = prompt(`Masukkan emel ${userName} untuk hantar reset kata laluan:`);
-    if (!email || !email.trim()) return;
-    await adminSendPasswordReset(email.trim(), userName);
+    // Use modal instead of prompt() — prompt() is blocked on iOS/mobile browsers
+    if (typeof window.openResetPasswordModal === 'function') {
+        window.openResetPasswordModal(userName);
+    } else {
+        // fallback (desktop only)
+        const email = prompt(`Masukkan emel ${userName} untuk hantar reset kata laluan:`);
+        if (!email || !email.trim()) return;
+        await adminSendPasswordReset(email.trim(), userName);
+    }
 }
 
 async function adminSendPasswordReset(email, userName) {
