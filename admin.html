@@ -1112,6 +1112,25 @@ tbody td{padding:11px 14px;font-size:13.5px;color:var(--s700);}
   </div>
 </div>
 
+<!-- ════════ MODAL: Reset Password ════════ -->
+<div class="modal-ov" id="resetPasswordModal">
+  <div class="modal" style="max-width:420px;">
+    <div class="modal-hd">
+      <div class="modal-title"><i class="fas fa-key" style="color:var(--p);margin-right:8px;font-size:15px;"></i>Reset Kata Laluan</div>
+      <button class="modal-close" onclick="closeModal('resetPasswordModal')"><i class="fas fa-times"></i></button>
+    </div>
+    <p style="font-size:13px;color:var(--s600);margin-bottom:16px;">Masukkan emel <strong id="resetPasswordUserName"></strong> untuk menghantar pautan reset kata laluan.</p>
+    <div class="field">
+      <label>Alamat Emel</label>
+      <input type="email" id="resetPasswordEmail" placeholder="contoh@email.com" />
+    </div>
+    <div class="modal-footer">
+      <button class="btn-primary" onclick="submitResetPasswordModal()"><i class="fas fa-paper-plane"></i> Hantar</button>
+      <button class="btn-cancel" onclick="closeModal('resetPasswordModal')">Batal</button>
+    </div>
+  </div>
+</div>
+
 <!-- ════════ TOAST ════════ -->
 <div class="toast" id="toast"></div>
 
@@ -1143,4 +1162,26 @@ tbody td{padding:11px 14px;font-size:13.5px;color:var(--s700);}
       !sidebar.contains(e.target) &&
       !menuToggle.contains(e.target)
     ) {
-      sid
+      sidebar.classList.remove('open');
+    }
+  });
+
+  /* ── Reset Password Modal ── */
+  window._resetPasswordUserName = '';
+  window.openResetPasswordModal = function(userName) {
+    window._resetPasswordUserName = userName;
+    document.getElementById('resetPasswordUserName').textContent = userName;
+    document.getElementById('resetPasswordEmail').value = '';
+    document.getElementById('resetPasswordModal').classList.add('open');
+    setTimeout(() => document.getElementById('resetPasswordEmail').focus(), 100);
+  };
+  window.submitResetPasswordModal = async function() {
+    const email = document.getElementById('resetPasswordEmail').value.trim();
+    if (!email) { showToast('Sila masukkan alamat emel.', 'error'); return; }
+    closeModal('resetPasswordModal');
+    await adminSendPasswordReset(email, window._resetPasswordUserName);
+  };
+  document.getElementById('resetPasswordEmail').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') window.submitResetPasswordModal();
+  });
+</script>
