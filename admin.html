@@ -402,7 +402,7 @@ tbody td{padding:11px 14px;font-size:13.5px;color:var(--s700);}
     <div class="sb-section" style="margin-top:8px;">Pengurusan</div>
     <button class="nav-btn" data-tab="halaqah"><i class="fas fa-circle-nodes"></i> Halaqah</button>
     <button class="nav-btn" data-tab="teachers"><i class="fas fa-chalkboard-user"></i> Murabbi</button>
-    <button class="nav-btn" data-tab="parents"><i class="fas fa-users"></i> Wali Murid</button>
+    <button class="nav-btn" data-tab="parents"><i class="fas fa-users"></i> Ibu Bapa Murid</button>
     <button class="nav-btn" data-tab="register"><i class="fas fa-user-plus"></i> Daftar Pengguna</button>
     <button class="nav-btn" data-tab="batch"><i class="fas fa-file-arrow-up"></i> Muat Naik CSV</button>
 
@@ -591,15 +591,15 @@ tbody td{padding:11px 14px;font-size:13.5px;color:var(--s700);}
     <div class="tab-pane" id="pane-parents">
       <div class="page-hd">
         <div class="page-hd-left">
-          <h2>Senarai Wali Murid</h2>
-          <p>Semua wali yang berdaftar dalam sistem</p>
+          <h2>Senarai Ibu Bapa Murid</h2>
+          <p>Semua Ibu Bapa yang berdaftar dalam sistem</p>
         </div>
       </div>
       <div class="card">
         <div class="toolbar">
           <div class="search-wrap">
             <i class="fas fa-magnifying-glass"></i>
-            <input type="text" id="parentSearch" placeholder="Cari nama wali..." oninput="filterParentTable(this.value)" />
+            <input type="text" id="parentSearch" placeholder="Cari nama Ibu Bapa..." oninput="filterParentTable(this.value)" />
           </div>
         </div>
         <div class="table-wrap">
@@ -616,7 +616,7 @@ tbody td{padding:11px 14px;font-size:13.5px;color:var(--s700);}
       <div class="page-hd">
         <div class="page-hd-left">
           <h2>Daftar Pengguna & Pelajar</h2>
-          <p>Daftarkan Murabbi, Wali, dan Pelajar. Daftar Wali dahulu sebelum Pelajar.</p>
+          <p>Daftarkan Murabbi, Ibu Bapa, dan Pelajar. Daftar Ibu Bapa dahulu sebelum Pelajar.</p>
         </div>
       </div>
       <div class="mgmt-grid">
@@ -637,20 +637,20 @@ tbody td{padding:11px 14px;font-size:13.5px;color:var(--s700);}
           </div>
         </div>
 
-        <!-- Wali -->
+        <!-- Ibu Bapa -->
         <div class="mgmt-card">
           <div class="mgmt-card-hd">
             <div class="mgmt-hd-icon mhi-parent"><i class="fas fa-users"></i></div>
-            <div><div class="mgmt-hd-text">Tambah Wali Murid</div><div class="mgmt-hd-sub">Daftar dahulu sebelum pelajar</div></div>
+            <div><div class="mgmt-hd-text">Tambah Ibu Bapa Murid</div><div class="mgmt-hd-sub">Daftar dahulu sebelum pelajar</div></div>
           </div>
           <div class="mgmt-card-body">
             <form id="formParent">
-              <div class="field"><label>Nama Penuh Wali</label><input type="text" id="parentName" placeholder="Nama wali..." required /></div>
-              <div class="field"><label>Emel</label><input type="email" id="parentEmail" placeholder="wali@email.com" required /></div>
+              <div class="field"><label>Nama Penuh Ibu / Bapa</label><input type="text" id="parentName" placeholder="Nama Ibu Bapa..." required /></div>
+              <div class="field"><label>Emel</label><input type="email" id="parentEmail" placeholder="IbuBapa@email.com" required /></div>
               <div class="field"><label>Kata Laluan</label><input type="password" id="parentPass" placeholder="Min. 8 aksara" required minlength="8" /></div>
-              <button type="submit" class="btn-primary" style="width:100%;justify-content:center;"><i class="fas fa-plus"></i> Daftar Wali</button>
+              <button type="submit" class="btn-primary" style="width:100%;justify-content:center;"><i class="fas fa-plus"></i> Daftar Ibu Bapa</button>
               <div style="margin-top:10px;font-size:11.5px;color:var(--gold);background:var(--goldp);border-radius:8px;padding:8px 12px;">
-                <i class="fas fa-circle-info"></i> <strong>Langkah seterusnya:</strong> Selepas daftar Wali, pergi ke bahagian "Daftar Pelajar" di bawah dan hubungkan pelajar dengan Wali yang baru didaftarkan.
+                <i class="fas fa-circle-info"></i> <strong>Langkah seterusnya:</strong> Selepas daftar Ibu Bapa, pergi ke bahagian "Daftar Pelajar" di bawah dan hubungkan pelajar dengan Ibu Bapa yang baru didaftarkan.
               </div>
             </form>
           </div>
@@ -695,7 +695,7 @@ tbody td{padding:11px 14px;font-size:13.5px;color:var(--s700);}
                 </select>
               </div>
               <div class="field"><label>Halaqah</label><select id="studentHalaqah" class="sel-halaqah"></select></div>
-              <div class="field"><label>Wali Murid <span style="color:var(--p);font-size:10px;">← Hubungkan di sini</span></label><select id="studentParent" class="sel-parent"></select></div>
+              <div class="field"><label>Ibu Bapa Murid <span style="color:var(--p);font-size:10px;">← Hubungkan di sini</span></label><select id="studentParent" class="sel-parent"></select></div>
               <div class="field"><label>Muka Surat Permulaan</label><input type="number" id="studentPage" value="1" min="1" max="604" /></div>
               <button type="submit" class="btn-primary" style="width:100%;justify-content:center;"><i class="fas fa-plus"></i> Daftar Pelajar</button>
             </form>
@@ -753,8 +753,8 @@ tbody td{padding:11px 14px;font-size:13.5px;color:var(--s700);}
                 <div style="display:flex;gap:8px;align-items:flex-start;"><i class="fas fa-check-circle" style="color:var(--g);margin-top:2px;flex-shrink:0;"></i><span><strong>matric_no</strong> – Pilihan.</span></div>
                 <div style="display:flex;gap:8px;align-items:flex-start;"><i class="fas fa-check-circle" style="color:var(--g);margin-top:2px;flex-shrink:0;"></i><span><strong>form_level</strong> – Tingkatan 1–5. Penting untuk RPT automatik.</span></div>
                 <div style="display:flex;gap:8px;align-items:flex-start;"><i class="fas fa-check-circle" style="color:var(--g);margin-top:2px;flex-shrink:0;"></i><span><strong>halaqah_name</strong> – Nama halaqah sedia ada.</span></div>
-                <div style="display:flex;gap:8px;align-items:flex-start;"><i class="fas fa-check-circle" style="color:var(--g);margin-top:2px;flex-shrink:0;"></i><span><strong>parent_email</strong> – Emel wali yang sudah berdaftar.</span></div>
-                <div style="display:flex;gap:8px;align-items:flex-start;"><i class="fas fa-info-circle" style="color:var(--gold);margin-top:2px;flex-shrink:0;"></i><span>Halaqah dan Wali perlu wujud dahulu sebelum import.</span></div>
+                <div style="display:flex;gap:8px;align-items:flex-start;"><i class="fas fa-check-circle" style="color:var(--g);margin-top:2px;flex-shrink:0;"></i><span><strong>parent_email</strong> – Emel Ibu Bapa yang sudah berdaftar.</span></div>
+                <div style="display:flex;gap:8px;align-items:flex-start;"><i class="fas fa-info-circle" style="color:var(--gold);margin-top:2px;flex-shrink:0;"></i><span>Halaqah dan Ibu Bapa perlu wujud dahulu sebelum import.</span></div>
               </div>
             </div>
           </div>
@@ -979,7 +979,7 @@ tbody td{padding:11px 14px;font-size:13.5px;color:var(--s700);}
       <div class="page-hd">
         <div class="page-hd-left">
           <h2>Pengumuman</h2>
-          <p>Hantar maklumat kepada pelajar, wali atau semua pengguna</p>
+          <p>Hantar maklumat kepada pelajar, Ibu Bapa atau semua pengguna</p>
         </div>
       </div>
       <div style="display:grid;grid-template-columns:380px 1fr;gap:18px;align-items:start;">
@@ -997,7 +997,7 @@ tbody td{padding:11px 14px;font-size:13.5px;color:var(--s700);}
                 <select id="annRole">
                   <option value="">Semua Pengguna</option>
                   <option value="teacher">Murabbi sahaja</option>
-                  <option value="parent">Wali sahaja</option>
+                  <option value="parent">Ibu Bapa sahaja</option>
                   <option value="student">Pelajar sahaja</option>
                 </select>
               </div>
@@ -1043,7 +1043,7 @@ tbody td{padding:11px 14px;font-size:13.5px;color:var(--s700);}
       </select>
     </div>
     <div class="field"><label>Halaqah</label><select id="editStudentHalaqah" class="sel-halaqah-edit"></select></div>
-    <div class="field"><label>Wali Murid <span style="color:var(--s400);font-weight:400;text-transform:none;">(tukar untuk ubah wali)</span></label><select id="editStudentParent"></select></div>
+    <div class="field"><label>Ibu Bapa Murid <span style="color:var(--s400);font-weight:400;text-transform:none;">(tukar untuk ubah Ibu Bapa)</span></label><select id="editStudentParent"></select></div>
     <div class="modal-footer">
       <button class="btn-primary" onclick="submitEditStudent()"><i class="fas fa-floppy-disk"></i> Simpan</button>
       <button class="btn-cancel" onclick="closeModal('editStudentModal')">Batal</button>
