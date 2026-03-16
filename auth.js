@@ -278,23 +278,41 @@ function watchSession() {
 // ============================================================
 
 async function initLoginPage() {
+    const formArea      = document.getElementById('loginFormArea');
+    const redirectOv    = document.getElementById('redirectOverlay');
+    const redirectSub   = document.getElementById('redirectSubText');
+
+    function showRedirecting(roleName) {
+        if (formArea)    formArea.classList.add('hidden-soft');
+        if (redirectOv)  redirectOv.classList.add('show');
+        if (redirectSub && roleName) {
+            const roleLabels = { admin: 'Pentadbir', teacher: 'Murabbi', parent: 'Wali', student: 'Pelajar' };
+            redirectSub.textContent = 'Masuk sebagai ' + (roleLabels[roleName] || roleName) + '...';
+        }
+    }
+
     // Handle OAuth redirect callback + existing sessions
     window.supabase.auth.onAuthStateChange(async (event, session) => {
         if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session) {
             const profile = await fetchProfile(session.user.id);
             if (profile) {
+                showRedirecting(profile.role);
                 routeByRole(profile.role);
             } else {
                 // New Google user — DB trigger may be slightly delayed, retry up to 3x
+                showRedirecting(null);
                 let attempts = 0;
                 const retry = setInterval(async () => {
                     attempts++;
                     const retryProfile = await fetchProfile(session.user.id);
                     if (retryProfile) {
                         clearInterval(retry);
+                        showRedirecting(retryProfile.role);
                         routeByRole(retryProfile.role);
                     } else if (attempts >= 4) {
                         clearInterval(retry);
+                        if (formArea)   formArea.classList.remove('hidden-soft');
+                        if (redirectOv) redirectOv.classList.remove('show');
                         showAuthError('Profil tidak dijumpai. Sila hubungi admin.');
                     }
                 }, 1500);
@@ -306,7 +324,11 @@ async function initLoginPage() {
     const { data: { session } } = await window.supabase.auth.getSession();
     if (session) {
         const profile = await fetchProfile(session.user.id);
-        if (profile) routeByRole(profile.role);
+        if (profile) {
+            showRedirecting(profile.role);
+            routeByRole(profile.role);
+            return; // Stop — don't bind form events when redirecting
+        }
     }
 
     // Bind login form
