@@ -491,7 +491,7 @@ async function deleteHalaqah(id) {
 async function loadTeachersTable() {
     const tbody = document.getElementById('teacherTableBody');
     if (!tbody) return;
-    tbody.innerHTML = '<tr class="empty-row"><td colspan="5"><i class="fas fa-spinner fa-spin"></i></td></tr>';
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="6"><i class="fas fa-spinner fa-spin"></i></td></tr>';
 
     const { data: teachers } = await supabase.from('profiles').select('id, full_name, phone').eq('role','teacher').order('full_name');
     allTeachers = teachers || [];
@@ -510,6 +510,9 @@ async function loadTeachersTable() {
           <td><div class="td-name"><div class="av-sm" style="background:linear-gradient(135deg,var(--p),var(--pl));">${(t.full_name||'?')[0]}</div>${t.full_name}</div></td>
           <td style="color:var(--s500);">${t.phone || '–'}</td>
           <td>${hMap[t.id] ? `<span class="badge badge-g">${hMap[t.id]}</span>` : '<span style="color:var(--s400);">Tiada halaqah</span>'}</td>
+          <td>
+            <button class="btn-sm btn-edit" onclick="openEditTeacherModal('${t.id}','${(t.full_name||'').replace(/'/g,"\\'")}','${(t.phone||'').replace(/'/g,"\\'")}')"><i class="fas fa-pen"></i> Edit</button>
+          </td>
           <td><button class="btn-sm btn-edit btn-reset-pw" data-name="${(t.full_name||'').replace(/"/g,'&quot;')}"><i class="fas fa-key"></i> Reset</button></td>
           <td><button class="btn-sm btn-danger" onclick="removeUser('${t.id}','${(t.full_name||'').replace(/'/g,"\\'")}')"><i class="fas fa-user-minus"></i> Alih Keluar</button></td>
         </tr>`).join('');
@@ -554,6 +557,7 @@ function renderParentRows(parents, childCount) {
           <td><div class="td-name"><div class="av-sm" style="background:linear-gradient(135deg,var(--gold),#F59E0B);">${(p.full_name||'?')[0]}</div>${p.full_name}</div></td>
           <td style="color:var(--s500);">${p.phone || '–'}</td>
           <td><span class="badge badge-p">${childCount[p.id]||0} anak</span></td>
+          <td><button class="btn-sm btn-edit" onclick="openEditParentModal('${p.id}','${(p.full_name||'').replace(/'/g,"\\'")}','${(p.phone||'').replace(/'/g,"\\'")}')"><i class="fas fa-pen"></i> Edit</button></td>
           <td><button class="btn-sm btn-danger" onclick="removeUser('${p.id}','${(p.full_name||'').replace(/'/g,"\\'")}')"><i class="fas fa-user-minus"></i> Alih Keluar</button></td>
         </tr>`).join('');
 }
@@ -1336,6 +1340,64 @@ async function adminChangeOwnPassword() {
 }
 
 // ============================================================
+// TEACHER EDIT MODAL
+// ============================================================
+
+function openEditTeacherModal(id, name, phone) {
+    document.getElementById('editTeacherId').value   = id;
+    document.getElementById('editTeacherName').value = name;
+    document.getElementById('editTeacherPhone').value = phone || '';
+    openModal('editTeacherModal');
+}
+
+async function submitEditTeacher() {
+    const id    = document.getElementById('editTeacherId').value;
+    const name  = document.getElementById('editTeacherName').value.trim();
+    const phone = document.getElementById('editTeacherPhone').value.trim();
+
+    if (!name) { showToast('Sila masukkan nama murabbi.', 'error'); return; }
+
+    const { error } = await supabase.from('profiles')
+        .update({ full_name: name, phone: phone || null })
+        .eq('id', id);
+
+    if (error) { showToast('Ralat: ' + error.message, 'error'); return; }
+    showToast('Maklumat murabbi berjaya dikemaskini!', 'success');
+    closeModal('editTeacherModal');
+    await loadDropdownData();
+    loadTeachersTable();
+}
+
+// ============================================================
+// PARENT EDIT MODAL
+// ============================================================
+
+function openEditParentModal(id, name, phone) {
+    document.getElementById('editParentId').value    = id;
+    document.getElementById('editParentName').value  = name;
+    document.getElementById('editParentPhone').value = phone || '';
+    openModal('editParentModal');
+}
+
+async function submitEditParent() {
+    const id    = document.getElementById('editParentId').value;
+    const name  = document.getElementById('editParentName').value.trim();
+    const phone = document.getElementById('editParentPhone').value.trim();
+
+    if (!name) { showToast('Sila masukkan nama wali murid.', 'error'); return; }
+
+    const { error } = await supabase.from('profiles')
+        .update({ full_name: name, phone: phone || null })
+        .eq('id', id);
+
+    if (error) { showToast('Ralat: ' + error.message, 'error'); return; }
+    showToast('Maklumat wali murid berjaya dikemaskini!', 'success');
+    closeModal('editParentModal');
+    await loadDropdownData();
+    loadParentsTable();
+}
+
+// ============================================================
 // EXPORTS
 // ============================================================
 window.switchTab             = switchTab;
@@ -1365,3 +1427,7 @@ window.adminSendPasswordReset = adminSendPasswordReset;
 window.promptAndResetPassword  = promptAndResetPassword;
 window.resetAcademicYear     = resetAcademicYear;
 window.adminChangeOwnPassword = adminChangeOwnPassword;
+window.openEditTeacherModal  = openEditTeacherModal;
+window.submitEditTeacher     = submitEditTeacher;
+window.openEditParentModal   = openEditParentModal;
+window.submitEditParent      = submitEditParent;
