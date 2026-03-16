@@ -505,28 +505,64 @@ async function loadTeachersTable() {
     const hMap = {};
     (halaqahs || []).forEach(h => { hMap[h.teacher_id] = h.name; });
 
-    tbody.innerHTML = allTeachers.map(t => `
+    tbody.innerHTML = allTeachers.map(t => {
+        const emailHtml = t.email
+            ? `<div style="font-size:11px;color:var(--s400);font-weight:400;">${t.email}</div>`
+            : `<div style="font-size:11px;color:var(--r);font-weight:500;"><i class="fas fa-triangle-exclamation"></i> Tiada emel</div>`;
+        const halaqahHtml = hMap[t.id]
+            ? `<span class="badge badge-g">${hMap[t.id]}</span>`
+            : `<span style="color:var(--s400);">Tiada halaqah</span>`;
+        return `
         <tr>
           <td>
             <div class="td-name">
               <div class="av-sm" style="background:linear-gradient(135deg,var(--p),var(--pl));">${(t.full_name||'?')[0]}</div>
-              <div>
-                <div>${t.full_name}</div>
-                ${t.email ? `<div style="font-size:11px;color:var(--s400);font-weight:400;">${t.email}</div>` : '<div style="font-size:11px;color:var(--r);font-weight:500;"><i class="fas fa-triangle-exclamation"></i> Tiada emel</div>'}
-              </div>
+              <div><div>${t.full_name}</div>${emailHtml}</div>
             </div>
           </td>
           <td style="color:var(--s500);">${t.phone || '–'}</td>
-          <td>${hMap[t.id] ? `<span class="badge badge-g">${hMap[t.id]}</span>` : '<span style="color:var(--s400);">Tiada halaqah</span>'}</td>
+          <td>${halaqahHtml}</td>
           <td>
-            <button class="btn-sm btn-edit" onclick="openEditTeacherModal('${t.id}','${(t.full_name||'').replace(/'/g,"\\'")}','${(t.phone||'').replace(/'/g,"\\'")}",'${(t.email||'').replace(/'/g,"\\'")}')"><i class="fas fa-pen"></i> Edit</button>
+            <button class="btn-sm btn-edit btn-edit-teacher"
+              data-id="${t.id}"
+              data-name="${(t.full_name||'').replace(/"/g,'&quot;')}"
+              data-phone="${(t.phone||'').replace(/"/g,'&quot;')}"
+              data-email="${(t.email||'').replace(/"/g,'&quot;')}">
+              <i class="fas fa-pen"></i> Edit
+            </button>
           </td>
-          <td><button class="btn-sm btn-edit btn-reset-pw" data-name="${(t.full_name||'').replace(/"/g,'&quot;')}" data-email="${(t.email||'').replace(/"/g,'&quot;')}"><i class="fas fa-key"></i> Reset</button></td>
-          <td><button class="btn-sm btn-danger" onclick="removeUser('${t.id}','${(t.full_name||'').replace(/'/g,"\\'")}')"><i class="fas fa-user-minus"></i> Alih Keluar</button></td>
-        </tr>`).join('');
+          <td>
+            <button class="btn-sm btn-edit btn-reset-pw"
+              data-name="${(t.full_name||'').replace(/"/g,'&quot;')}"
+              data-email="${(t.email||'').replace(/"/g,'&quot;')}">
+              <i class="fas fa-key"></i> Reset
+            </button>
+          </td>
+          <td>
+            <button class="btn-sm btn-danger btn-remove-user"
+              data-id="${t.id}"
+              data-name="${(t.full_name||'').replace(/"/g,'&quot;')}" >
+              <i class="fas fa-user-minus"></i> Alih Keluar
+            </button>
+          </td>
+        </tr>`;
+    }).join('');
+
+    tbody.querySelectorAll('.btn-edit-teacher').forEach(btn => {
+        btn.addEventListener('click', () => openEditTeacherModal(
+            btn.dataset.id,
+            btn.dataset.name,
+            btn.dataset.phone,
+            btn.dataset.email
+        ));
+    });
 
     tbody.querySelectorAll('.btn-reset-pw').forEach(btn => {
         btn.addEventListener('click', () => promptAndResetPassword(btn.dataset.name, btn.dataset.email));
+    });
+
+    tbody.querySelectorAll('.btn-remove-user').forEach(btn => {
+        btn.addEventListener('click', () => removeUser(btn.dataset.id, btn.dataset.name));
     });
 }
 
