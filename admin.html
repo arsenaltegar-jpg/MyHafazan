@@ -580,8 +580,8 @@ tbody td{padding:11px 14px;font-size:13.5px;color:var(--s700);}
       <div class="card">
         <div class="table-wrap">
           <table>
-            <thead><tr><th>Nama</th><th>No. Telefon</th><th>Halaqah</th><th>Reset Kata Laluan</th><th>Tindakan</th></tr></thead>
-            <tbody id="teacherTableBody"><tr class="empty-row"><td colspan="5"><i class="fas fa-spinner fa-spin"></i></td></tr></tbody>
+            <thead><tr><th>Nama</th><th>No. Telefon</th><th>Halaqah</th><th>Edit</th><th>Reset Kata Laluan</th><th>Tindakan</th></tr></thead>
+            <tbody id="teacherTableBody"><tr class="empty-row"><td colspan="6"><i class="fas fa-spinner fa-spin"></i></td></tr></tbody>
           </table>
         </div>
       </div>
@@ -604,8 +604,8 @@ tbody td{padding:11px 14px;font-size:13.5px;color:var(--s700);}
         </div>
         <div class="table-wrap">
           <table>
-            <thead><tr><th>Nama</th><th>No. Telefon</th><th>Bilangan Anak</th><th>Tindakan</th></tr></thead>
-            <tbody id="parentTableBody"><tr class="empty-row"><td colspan="4"><i class="fas fa-spinner fa-spin"></i></td></tr></tbody>
+            <thead><tr><th>Nama</th><th>No. Telefon</th><th>Bilangan Anak</th><th>Edit</th><th>Tindakan</th></tr></thead>
+            <tbody id="parentTableBody"><tr class="empty-row"><td colspan="5"><i class="fas fa-spinner fa-spin"></i></td></tr></tbody>
           </table>
         </div>
       </div>
@@ -1127,6 +1127,52 @@ tbody td{padding:11px 14px;font-size:13.5px;color:var(--s700);}
     <div class="modal-footer">
       <button class="btn-primary" onclick="submitResetPasswordModal()"><i class="fas fa-paper-plane"></i> Hantar</button>
       <button class="btn-cancel" onclick="closeModal('resetPasswordModal')">Batal</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════ MODAL: Edit Murabbi ════════ -->
+<div class="modal-ov" id="editTeacherModal">
+  <div class="modal" style="max-width:460px;">
+    <div class="modal-hd">
+      <div class="modal-title"><i class="fas fa-chalkboard-user" style="color:var(--p);margin-right:8px;font-size:15px;"></i>Kemaskini Murabbi</div>
+      <button class="modal-close" onclick="closeModal('editTeacherModal')"><i class="fas fa-times"></i></button>
+    </div>
+    <input type="hidden" id="editTeacherId" />
+    <div class="field">
+      <label>Nama Penuh</label>
+      <input type="text" id="editTeacherName" placeholder="Nama penuh murabbi" />
+    </div>
+    <div class="field">
+      <label>No. Telefon <span style="color:var(--s400);font-weight:400;text-transform:none;">(pilihan)</span></label>
+      <input type="tel" id="editTeacherPhone" placeholder="cth: 0123456789" />
+    </div>
+    <div class="modal-footer">
+      <button class="btn-primary" onclick="submitEditTeacher()"><i class="fas fa-floppy-disk"></i> Simpan</button>
+      <button class="btn-cancel" onclick="closeModal('editTeacherModal')">Batal</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════ MODAL: Edit Ibu Bapa ════════ -->
+<div class="modal-ov" id="editParentModal">
+  <div class="modal" style="max-width:460px;">
+    <div class="modal-hd">
+      <div class="modal-title"><i class="fas fa-users" style="color:var(--gold);margin-right:8px;font-size:15px;"></i>Kemaskini Wali Murid</div>
+      <button class="modal-close" onclick="closeModal('editParentModal')"><i class="fas fa-times"></i></button>
+    </div>
+    <input type="hidden" id="editParentId" />
+    <div class="field">
+      <label>Nama Penuh</label>
+      <input type="text" id="editParentName" placeholder="Nama penuh wali murid" />
+    </div>
+    <div class="field">
+      <label>No. Telefon <span style="color:var(--s400);font-weight:400;text-transform:none;">(pilihan)</span></label>
+      <input type="tel" id="editParentPhone" placeholder="cth: 0123456789" />
+    </div>
+    <div class="modal-footer">
+      <button class="btn-primary" onclick="submitEditParent()"><i class="fas fa-floppy-disk"></i> Simpan</button>
+      <button class="btn-cancel" onclick="closeModal('editParentModal')">Batal</button>
     </div>
   </div>
 </div>
