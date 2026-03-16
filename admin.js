@@ -493,11 +493,11 @@ async function loadTeachersTable() {
     if (!tbody) return;
     tbody.innerHTML = '<tr class="empty-row"><td colspan="6"><i class="fas fa-spinner fa-spin"></i></td></tr>';
 
-    const { data: teachers } = await supabase.from('profiles').select('id, full_name, phone').eq('role','teacher').order('full_name');
+    const { data: teachers } = await supabase.from('profiles').select('id, full_name, phone, email').eq('role','teacher').order('full_name');
     allTeachers = teachers || [];
 
     if (!allTeachers.length) {
-        tbody.innerHTML = '<tr class="empty-row"><td colspan="5">Tiada murabbi berdaftar.</td></tr>';
+        tbody.innerHTML = '<tr class="empty-row"><td colspan="6">Tiada murabbi berdaftar.</td></tr>';
         return;
     }
 
@@ -507,19 +507,26 @@ async function loadTeachersTable() {
 
     tbody.innerHTML = allTeachers.map(t => `
         <tr>
-          <td><div class="td-name"><div class="av-sm" style="background:linear-gradient(135deg,var(--p),var(--pl));">${(t.full_name||'?')[0]}</div>${t.full_name}</div></td>
+          <td>
+            <div class="td-name">
+              <div class="av-sm" style="background:linear-gradient(135deg,var(--p),var(--pl));">${(t.full_name||'?')[0]}</div>
+              <div>
+                <div>${t.full_name}</div>
+                ${t.email ? `<div style="font-size:11px;color:var(--s400);font-weight:400;">${t.email}</div>` : '<div style="font-size:11px;color:var(--r);font-weight:500;"><i class="fas fa-triangle-exclamation"></i> Tiada emel</div>'}
+              </div>
+            </div>
+          </td>
           <td style="color:var(--s500);">${t.phone || '–'}</td>
           <td>${hMap[t.id] ? `<span class="badge badge-g">${hMap[t.id]}</span>` : '<span style="color:var(--s400);">Tiada halaqah</span>'}</td>
           <td>
-            <button class="btn-sm btn-edit" onclick="openEditTeacherModal('${t.id}','${(t.full_name||'').replace(/'/g,"\\'")}','${(t.phone||'').replace(/'/g,"\\'")}')"><i class="fas fa-pen"></i> Edit</button>
+            <button class="btn-sm btn-edit" onclick="openEditTeacherModal('${t.id}','${(t.full_name||'').replace(/'/g,"\\'")}','${(t.phone||'').replace(/'/g,"\\'")}",'${(t.email||'').replace(/'/g,"\\'")}')"><i class="fas fa-pen"></i> Edit</button>
           </td>
-          <td><button class="btn-sm btn-edit btn-reset-pw" data-name="${(t.full_name||'').replace(/"/g,'&quot;')}"><i class="fas fa-key"></i> Reset</button></td>
+          <td><button class="btn-sm btn-edit btn-reset-pw" data-name="${(t.full_name||'').replace(/"/g,'&quot;')}" data-email="${(t.email||'').replace(/"/g,'&quot;')}"><i class="fas fa-key"></i> Reset</button></td>
           <td><button class="btn-sm btn-danger" onclick="removeUser('${t.id}','${(t.full_name||'').replace(/'/g,"\\'")}')"><i class="fas fa-user-minus"></i> Alih Keluar</button></td>
         </tr>`).join('');
 
-    // Event delegation — avoids inline onclick string-escaping issues
     tbody.querySelectorAll('.btn-reset-pw').forEach(btn => {
-        btn.addEventListener('click', () => promptAndResetPassword(btn.dataset.name));
+        btn.addEventListener('click', () => promptAndResetPassword(btn.dataset.name, btn.dataset.email));
     });
 }
 
@@ -531,13 +538,13 @@ let allParentsCache = [];
 async function loadParentsTable() {
     const tbody = document.getElementById('parentTableBody');
     if (!tbody) return;
-    tbody.innerHTML = '<tr class="empty-row"><td colspan="4"><i class="fas fa-spinner fa-spin"></i></td></tr>';
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="5"><i class="fas fa-spinner fa-spin"></i></td></tr>';
 
-    const { data: parents } = await supabase.from('profiles').select('id, full_name, phone').eq('role','parent').order('full_name');
+    const { data: parents } = await supabase.from('profiles').select('id, full_name, phone, email').eq('role','parent').order('full_name');
     allParentsCache = parents || [];
 
     if (!allParentsCache.length) {
-        tbody.innerHTML = '<tr class="empty-row"><td colspan="4">Tiada wali berdaftar.</td></tr>';
+        tbody.innerHTML = '<tr class="empty-row"><td colspan="5">Tiada wali berdaftar.</td></tr>';
         return;
     }
 
@@ -554,11 +561,19 @@ function renderParentRows(parents, childCount) {
     if (!tbody) return;
     tbody.innerHTML = parents.map(p => `
         <tr>
-          <td><div class="td-name"><div class="av-sm" style="background:linear-gradient(135deg,var(--gold),#F59E0B);">${(p.full_name||'?')[0]}</div>${p.full_name}</div></td>
+          <td>
+            <div class="td-name">
+              <div class="av-sm" style="background:linear-gradient(135deg,var(--gold),#F59E0B);">${(p.full_name||'?')[0]}</div>
+              <div>
+                <div>${p.full_name}</div>
+                ${p.email ? `<div style="font-size:11px;color:var(--s400);font-weight:400;">${p.email}</div>` : '<div style="font-size:11px;color:var(--r);font-weight:500;"><i class="fas fa-triangle-exclamation"></i> Tiada emel</div>'}
+              </div>
+            </div>
+          </td>
           <td style="color:var(--s500);">${p.phone || '–'}</td>
           <td><span class="badge badge-p">${childCount[p.id]||0} anak</span></td>
-          <td><button class="btn-sm btn-edit" onclick="openEditParentModal('${p.id}','${(p.full_name||'').replace(/'/g,"\\'")}','${(p.phone||'').replace(/'/g,"\\'")}')"><i class="fas fa-pen"></i> Edit</button></td>
-          <td><button class="btn-sm btn-danger" onclick="removeUser('${p.id}','${(p.full_name||'').replace(/'/g,"\\'")}')"><i class="fas fa-user-minus"></i> Alih Keluar</button></td>
+          <td><button class="btn-sm btn-edit" onclick="openEditParentModal('${p.id}','${(p.full_name||'').replace(/'/g,"\'")}','${(p.phone||'').replace(/'/g,"\'")}','${(p.email||'').replace(/'/g,"\'")}')"><i class="fas fa-pen"></i> Edit</button></td>
+          <td><button class="btn-sm btn-danger" onclick="removeUser('${p.id}','${(p.full_name||'').replace(/'/g,"\'")}')"><i class="fas fa-user-minus"></i> Alih Keluar</button></td>
         </tr>`).join('');
 }
 
@@ -1272,13 +1287,13 @@ function showToast(msg, type = 'success') {
 // enter the teacher/parent's email address manually.
 // ============================================================
 
-async function promptAndResetPassword(userName) {
-    // Use modal instead of prompt() — prompt() is blocked on iOS/mobile browsers
+async function promptAndResetPassword(userName, knownEmail) {
+    // Pass the known email so the modal can pre-fill it — no manual typing needed
     if (typeof window.openResetPasswordModal === 'function') {
-        window.openResetPasswordModal(userName);
+        window.openResetPasswordModal(userName, knownEmail);
     } else {
         // fallback (desktop only)
-        const email = prompt(`Masukkan emel ${userName} untuk hantar reset kata laluan:`);
+        const email = knownEmail || prompt(`Masukkan emel ${userName} untuk hantar reset kata laluan:`);
         if (!email || !email.trim()) return;
         await adminSendPasswordReset(email.trim(), userName);
     }
@@ -1343,10 +1358,11 @@ async function adminChangeOwnPassword() {
 // TEACHER EDIT MODAL
 // ============================================================
 
-function openEditTeacherModal(id, name, phone) {
-    document.getElementById('editTeacherId').value   = id;
-    document.getElementById('editTeacherName').value = name;
+function openEditTeacherModal(id, name, phone, email) {
+    document.getElementById('editTeacherId').value    = id;
+    document.getElementById('editTeacherName').value  = name;
     document.getElementById('editTeacherPhone').value = phone || '';
+    document.getElementById('editTeacherEmail').value = email || '';
     openModal('editTeacherModal');
 }
 
@@ -1354,12 +1370,14 @@ async function submitEditTeacher() {
     const id    = document.getElementById('editTeacherId').value;
     const name  = document.getElementById('editTeacherName').value.trim();
     const phone = document.getElementById('editTeacherPhone').value.trim();
+    const email = document.getElementById('editTeacherEmail').value.trim().toLowerCase();
 
     if (!name) { showToast('Sila masukkan nama murabbi.', 'error'); return; }
 
-    const { error } = await supabase.from('profiles')
-        .update({ full_name: name, phone: phone || null })
-        .eq('id', id);
+    const updates = { full_name: name, phone: phone || null };
+    if (email) updates.email = email;
+
+    const { error } = await supabase.from('profiles').update(updates).eq('id', id);
 
     if (error) { showToast('Ralat: ' + error.message, 'error'); return; }
     showToast('Maklumat murabbi berjaya dikemaskini!', 'success');
@@ -1372,10 +1390,11 @@ async function submitEditTeacher() {
 // PARENT EDIT MODAL
 // ============================================================
 
-function openEditParentModal(id, name, phone) {
+function openEditParentModal(id, name, phone, email) {
     document.getElementById('editParentId').value    = id;
     document.getElementById('editParentName').value  = name;
     document.getElementById('editParentPhone').value = phone || '';
+    document.getElementById('editParentEmail').value = email || '';
     openModal('editParentModal');
 }
 
@@ -1383,12 +1402,14 @@ async function submitEditParent() {
     const id    = document.getElementById('editParentId').value;
     const name  = document.getElementById('editParentName').value.trim();
     const phone = document.getElementById('editParentPhone').value.trim();
+    const email = document.getElementById('editParentEmail').value.trim().toLowerCase();
 
     if (!name) { showToast('Sila masukkan nama wali murid.', 'error'); return; }
 
-    const { error } = await supabase.from('profiles')
-        .update({ full_name: name, phone: phone || null })
-        .eq('id', id);
+    const updates = { full_name: name, phone: phone || null };
+    if (email) updates.email = email;
+
+    const { error } = await supabase.from('profiles').update(updates).eq('id', id);
 
     if (error) { showToast('Ralat: ' + error.message, 'error'); return; }
     showToast('Maklumat wali murid berjaya dikemaskini!', 'success');

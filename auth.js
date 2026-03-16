@@ -241,7 +241,7 @@ async function adminCreateUser(fullName, email, password, role) {
     if (data.user) {
         const { error: profileError } = await window.supabase
             .from('profiles')
-            .upsert({ id: data.user.id, full_name: fullName, role });
+            .upsert({ id: data.user.id, full_name: fullName, email, role });
         if (profileError) throw profileError;
     }
     return data;
