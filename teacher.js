@@ -7,6 +7,10 @@ let selectedStudent = null;
 let myHalaqah = null;
 let myStudents = [];
 
+// Pagination
+const PAGE_SIZE = 10;
+let currentPage = 1;
+
 // ============================================================
 // INIT
 // ============================================================
@@ -37,6 +41,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Search
     document.getElementById('searchInput')?.addEventListener('input', (e) => {
+        currentPage = 1;
         renderStudentList(e.target.value.toLowerCase());
     });
 });
@@ -135,7 +140,13 @@ function renderStudentList(filter = '') {
         return;
     }
 
-    container.innerHTML = filtered.map(student => {
+    // Pagination
+    const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+    if (currentPage > totalPages) currentPage = 1;
+    const start = (currentPage - 1) * PAGE_SIZE;
+    const paged = filtered.slice(start, start + PAGE_SIZE);
+
+    const cardsHtml = paged.map(student => {
         const hutang = student.hutang;
         let statusClass = 'status-green';
         let statusText = 'Melebihi';
@@ -156,7 +167,7 @@ function renderStudentList(filter = '') {
         const hutangDisplay = hutang === null ? '–' : hutang > 0 ? `+${hutang}` : `${hutang}`;
 
         return `
-        <div class="student-card" onclick="openLogModal(${student.id})">
+        <div class="student-card" data-id="${student.id}" onclick="openStudentDetail(${student.id})">
           <div class="sc-avatar">
             ${student.photo_url
               ? `<img src="${student.photo_url}" alt="${student.full_name}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" />`
@@ -175,10 +186,29 @@ function renderStudentList(filter = '') {
           <div class="sc-right">
             <div class="sc-hutang ${statusClass}">${hutangDisplay}</div>
             <div class="sc-status ${statusClass}"><i class="fas ${statusIcon}"></i> ${statusText}</div>
-            <div class="sc-log-btn"><i class="fas fa-pen-to-square"></i> Log</div>
+            <div class="sc-log-btn" onclick="event.stopPropagation(); openLogModal(${student.id})"><i class="fas fa-pen-to-square"></i> Log</div>
           </div>
         </div>`;
     }).join('');
+
+    // Pagination controls
+    const paginationHtml = totalPages > 1 ? `
+        <div class="pagination-bar">
+            <button class="pg-btn" onclick="changePage(-1)" ${currentPage <= 1 ? 'disabled' : ''}>
+                <i class="fas fa-chevron-left"></i>
+            </button>
+            <span class="pg-info">${currentPage} / ${totalPages} <span style="color:var(--slate-400);font-weight:400;">(${filtered.length} pelajar)</span></span>
+            <button class="pg-btn" onclick="changePage(1)" ${currentPage >= totalPages ? 'disabled' : ''}>
+                <i class="fas fa-chevron-right"></i>
+            </button>
+        </div>` : '';
+
+    container.innerHTML = cardsHtml + paginationHtml;
+}
+
+function changePage(dir) {
+    currentPage += dir;
+    renderStudentList(document.getElementById('searchInput')?.value?.toLowerCase() || '');
 }
 
 // ============================================================
@@ -395,8 +425,124 @@ function showTeacherToast(msg, type = 'success') {
     setTimeout(() => toast.classList.remove('show'), 3500);
 }
 
-window.openLogModal = openLogModal;
-window.closeLogModal = closeLogModal;
-window.submitLog = submitLog;
-window.editLog = editLog;
-window.deleteLog = deleteLog;
+// ============================================================
+// STUDENT DETAIL PANEL
+// ============================================================
+
+async function openStudentDetail(studentId) {
+    const student = myStudents.find(s => s.id === studentId);
+    if (!student) return;
+    selectedStudent = student;  // keep track so Log button in detail works
+
+    const panel = document.getElementById('studentDetailPanel');
+    if (!panel) return;
+
+    const initials = student.full_name.split(' ').map(w => w[0]).slice(0, 2).join('');
+    const hutang = student.hutang;
+    const hutangDisplay = hutang === null ? '–' : hutang > 0 ? `+${hutang} ms` : hutang === 0 ? 'Tepat' : `${hutang} ms`;
+    let statusClass = hutang === null ? 'status-gray' : hutang > 15 ? 'status-red' : hutang > 0 ? 'status-orange' : 'status-green';
+    const juzOverall = Math.min(100, Math.round((student.current_page / 604) * 100));
+
+    // Fill header
+    document.getElementById('detailAvatar').innerHTML = student.photo_url
+        ? `<img src="${student.photo_url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" />`
+        : `<span>${initials}</span>`;
+    document.getElementById('detailName').textContent = student.full_name;
+    document.getElementById('detailMeta').textContent = `ms. ${student.current_page} · Juzuk ${student.current_juz} · T${student.form_level || '–'}`;
+    document.getElementById('detailHutang').textContent = hutangDisplay;
+    document.getElementById('detailHutang').className = `detail-big-val ${statusClass}`;
+    document.getElementById('detailProgress').style.width = juzOverall + '%';
+    document.getElementById('detailProgressLabel').textContent = `${juzOverall}% keseluruhan (ms. ${student.current_page}/604)`;
+
+    // Open panel
+    panel.classList.remove('hidden');
+    panel.classList.add('open');
+
+    // Load logs
+    document.getElementById('detailLogs').innerHTML = '<p style="font-size:12px;color:#94A3B8;text-align:center;padding:20px;"><i class="fas fa-spinner fa-spin"></i> Memuat...</p>';
+    document.getElementById('detailStats').innerHTML = '';
+
+    const { data: logs } = await supabase
+        .from('hifz_logs')
+        .select('*')
+        .eq('student_id', studentId)
+        .order('session_date', { ascending: false })
+        .order('created_at', { ascending: false })
+        .limit(30);
+
+    // Stats computation
+    const allLogs = logs || [];
+    const jadidLogs = allLogs.filter(l => l.type === 'jadid');
+    const hadirLogs = allLogs.filter(l => l.type === 'hadir');
+    const murajaahLogs = allLogs.filter(l => l.type === 'murajaah_u' || l.type === 'murajaah_q');
+    const avgQuality = jadidLogs.length
+        ? (jadidLogs.reduce((a, l) => a + (l.quality_score || 0), 0) / jadidLogs.length).toFixed(1)
+        : '–';
+
+    document.getElementById('detailStats').innerHTML = `
+        <div class="detail-stat-grid">
+          <div class="detail-stat-box">
+            <div class="detail-stat-val">${jadidLogs.length}</div>
+            <div class="detail-stat-lbl"><i class="fas fa-star"></i> Sesi Jadid</div>
+          </div>
+          <div class="detail-stat-box">
+            <div class="detail-stat-val">${murajaahLogs.length}</div>
+            <div class="detail-stat-lbl"><i class="fas fa-rotate"></i> Murajaah</div>
+          </div>
+          <div class="detail-stat-box">
+            <div class="detail-stat-val">${hadirLogs.length}</div>
+            <div class="detail-stat-lbl"><i class="fas fa-user-check"></i> Hadir</div>
+          </div>
+          <div class="detail-stat-box">
+            <div class="detail-stat-val">${avgQuality}</div>
+            <div class="detail-stat-lbl"><i class="fas fa-star-half-stroke"></i> Purata Kualiti</div>
+          </div>
+        </div>`;
+
+    const typeLabels = { jadid: 'Hifz Jadid', murajaah_u: 'Murajaah Umum', murajaah_q: 'Murajaah Khas', hadir: 'Kehadiran' };
+    const typeColors = { jadid: '#6B21A8', murajaah_u: '#16A34A', murajaah_q: '#D97706', hadir: '#2563EB' };
+    const typeBg    = { jadid: '#F3E8FF', murajaah_u: '#DCFCE7', murajaah_q: '#FEF3C7', hadir: '#DBEAFE' };
+
+    if (!allLogs.length) {
+        document.getElementById('detailLogs').innerHTML = '<p style="font-size:13px;color:#94A3B8;text-align:center;padding:20px;">Tiada log tasmik lagi.</p>';
+        return;
+    }
+
+    document.getElementById('detailLogs').innerHTML = allLogs.map(log => {
+        const pageInfo = log.type === 'hadir' ? '' : `· ms. ${log.page_number}`;
+        const stars = log.quality_score ? '⭐'.repeat(log.quality_score) : '';
+        return `
+        <div style="display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid #F1F5F9;">
+          <div style="width:34px;height:34px;border-radius:8px;background:${typeBg[log.type]||'#F1F5F9'};display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <span style="width:8px;height:8px;border-radius:50%;background:${typeColors[log.type]||'#94A3B8'};display:block;"></span>
+          </div>
+          <div style="flex:1;">
+            <div style="font-size:13px;font-weight:700;color:#334155;">${typeLabels[log.type] || log.type} ${pageInfo}</div>
+            <div style="font-size:11px;color:#94A3B8;margin-top:2px;">${formatDateMY(log.session_date)} ${stars}</div>
+            ${log.notes ? `<div style="font-size:12px;color:#64748B;margin-top:4px;font-style:italic;">"${log.notes}"</div>` : ''}
+          </div>
+        </div>`;
+    }).join('');
+}
+
+function closeStudentDetail() {
+    const panel = document.getElementById('studentDetailPanel');
+    panel?.classList.remove('open');
+    setTimeout(() => panel?.classList.add('hidden'), 300);
+}
+
+function openLogFromDetail() {
+    if (!selectedStudent) return;
+    closeStudentDetail();
+    setTimeout(() => openLogModal(selectedStudent.id), 320);
+}
+
+window.openLogModal        = openLogModal;
+window.closeLogModal       = closeLogModal;
+window.submitLog           = submitLog;
+window.editLog             = editLog;
+window.deleteLog           = deleteLog;
+window.openStudentDetail   = openStudentDetail;
+window.closeStudentDetail  = closeStudentDetail;
+window.openLogFromDetail   = openLogFromDetail;
+window.changePage          = changePage;

@@ -273,18 +273,21 @@ async function loadRecentLogs() {
     const { data: logs } = await supabase.from('hifz_logs').select('*, students(full_name), profiles(full_name)').order('created_at', { ascending: false }).limit(8);
     const el = document.getElementById('recentLogs');
     if (!el) return;
-    const typeLabels = { jadid: 'Hifz Jadid', murajaah_u: 'Murajaah Umum', murajaah_q: 'Murajaah Khas' };
-    const typeCls    = { jadid: 'badge-p', murajaah_u: 'badge-g', murajaah_q: 'badge-gold' };
+    const typeLabels = { jadid: 'Hifz Jadid', murajaah_u: 'Murajaah Umum', murajaah_q: 'Murajaah Khas', hadir: 'Kehadiran' };
+    const typeCls    = { jadid: 'badge-p', murajaah_u: 'badge-g', murajaah_q: 'badge-gold', hadir: 'badge-info' };
     if (!logs?.length) { el.innerHTML = '<div class="empty-msg">Tiada log lagi.</div>'; return; }
-    el.innerHTML = logs.map(l => `
+    el.innerHTML = logs.map(l => {
+        const pageInfo = l.type === 'hadir' ? '<i class="fas fa-user-check" style="font-size:10px;"></i> Hadir' : `ms. ${l.page_number}`;
+        return `
         <div class="log-item">
           <div class="log-av">${(l.students?.full_name || '?')[0]}</div>
           <div class="log-info">
             <div class="log-name">${l.students?.full_name || '–'}</div>
-            <div class="log-meta"><span class="badge ${typeCls[l.type]}">${typeLabels[l.type]}</span> ms. ${l.page_number}</div>
+            <div class="log-meta"><span class="badge ${typeCls[l.type] || 'badge-p'}">${typeLabels[l.type] || l.type}</span> ${pageInfo}</div>
           </div>
           <div class="log-time">${timeAgo(l.created_at)}</div>
-        </div>`).join('');
+        </div>`;
+    }).join('');
 }
 
 async function loadTopStudents() {
