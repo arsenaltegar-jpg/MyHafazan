@@ -287,12 +287,23 @@ function closeLogModal() {
     const modal = document.getElementById('logModal');
     modal.classList.add('hidden');
     modal.classList.remove('flex');
-    selectedStudent = null;
-    // Reset edit mode on close
+
     const submitBtn = document.getElementById('submitLogBtn');
+    const wasEditMode = !!(submitBtn && submitBtn.dataset.editLogId);
+
+    // Reset edit mode
     if (submitBtn) {
         delete submitBtn.dataset.editLogId;
         submitBtn.innerHTML = '<i class="fas fa-floppy-disk"></i> Simpan Log Tasmik';
+    }
+
+    // If modal was opened from the Detail Panel (edit mode), return to it
+    // so the teacher lands back on the student profile instead of the main page.
+    const studentIdToReturn = selectedStudent?.id || null;
+    selectedStudent = null;
+
+    if (wasEditMode && studentIdToReturn) {
+        setTimeout(() => openStudentDetail(studentIdToReturn), 50);
     }
 }
 
@@ -553,6 +564,11 @@ async function submitLog() {
         const wasEditing = !!editLogId;
         const studentName = selectedStudent.full_name;
         const snapStudentId = currentStudentId; // already captured above
+
+        // Clear edit state BEFORE closeLogModal so it doesn't try to reopen
+        // the Detail Panel on its own — submitLog handles that below.
+        const sb = document.getElementById('submitLogBtn');
+        if (sb) delete sb.dataset.editLogId;
 
         closeLogModal();
 
