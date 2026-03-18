@@ -19,6 +19,78 @@ const AppState = {
 };
 
 // ============================================================
+// BRAVE BROWSER DETECTION + WARNING
+// ============================================================
+async function isBraveBrowser() {
+    if (navigator.brave && typeof navigator.brave.isBrave === 'function') {
+        return await navigator.brave.isBrave();
+    }
+    return false;
+}
+
+async function checkBraveAndWarn() {
+    const brave = await isBraveBrowser();
+    if (!brave) return;
+
+    // Hide the login form, show warning instead
+    const formArea = document.getElementById('loginFormArea');
+    const card = document.querySelector('.card');
+    if (!card) return;
+
+    if (formArea) formArea.classList.add('hidden-soft');
+
+    const warning = document.createElement('div');
+    warning.innerHTML = `
+        <div style="text-align:center; padding: 12px 0;">
+            <div style="font-size:40px; margin-bottom:16px;">🦁</div>
+            <div style="font-size:17px; font-weight:700; color:white; margin-bottom:8px;">
+                Pelayar Brave Dikesan
+            </div>
+            <div style="font-size:13px; color:rgba(255,255,255,0.5); margin-bottom:20px; line-height:1.6;">
+                MyHafazan tidak berfungsi dengan baik pada pelayar Brave kerana 
+                tetapan privasi yang ketat menghalang pengesahan selamat.
+            </div>
+            <div style="background:rgba(251,191,36,0.1); border:1px solid rgba(251,191,36,0.3); 
+                        border-radius:12px; padding:14px; margin-bottom:20px; text-align:left;">
+                <div style="font-size:12px; font-weight:700; color:#FCD34D; 
+                             margin-bottom:10px; letter-spacing:0.5px;">
+                    ⚙️ CARA MATIKAN BRAVE SHIELDS
+                </div>
+                <div style="font-size:12px; color:rgba(255,255,255,0.6); line-height:2;">
+                    1. Klik ikon <strong style="color:white;">🦁</strong> di bar alamat<br>
+                    2. Togol <strong style="color:white;">"Shields"</strong> kepada <strong style="color:#86EFAC;">PADAM</strong><br>
+                    3. Muat semula halaman ini
+                </div>
+            </div>
+            <div style="font-size:12px; color:rgba(255,255,255,0.35); margin-bottom:16px;">
+                — atau gunakan pelayar lain —
+            </div>
+            <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
+                <a href="https://www.google.com/chrome/" target="_blank"
+                   style="padding:8px 16px; background:rgba(255,255,255,0.08); 
+                          border:1px solid rgba(255,255,255,0.15); border-radius:8px;
+                          color:white; font-size:12px; font-weight:600; text-decoration:none;">
+                    Chrome
+                </a>
+                <a href="https://www.mozilla.org/firefox/" target="_blank"
+                   style="padding:8px 16px; background:rgba(255,255,255,0.08); 
+                          border:1px solid rgba(255,255,255,0.15); border-radius:8px;
+                          color:white; font-size:12px; font-weight:600; text-decoration:none;">
+                    Firefox
+                </a>
+                <a href="https://www.apple.com/safari/" target="_blank"
+                   style="padding:8px 16px; background:rgba(255,255,255,0.08); 
+                          border:1px solid rgba(255,255,255,0.15); border-radius:8px;
+                          color:white; font-size:12px; font-weight:600; text-decoration:none;">
+                    Safari
+                </a>
+            </div>
+        </div>
+    `;
+    card.appendChild(warning);
+}
+
+// ============================================================
 // ROLE-BASED ROUTING
 // ============================================================
 
@@ -275,6 +347,7 @@ function watchSession() {
 // ============================================================
 
 async function initLoginPage() {
+    await checkBraveAndWarn(); // ← ADD THIS at the very top
     const formArea   = document.getElementById('loginFormArea');
     const redirectOv = document.getElementById('redirectOverlay');
     const redirectSub = document.getElementById('redirectSubText');
