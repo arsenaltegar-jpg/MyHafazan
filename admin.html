@@ -1323,7 +1323,7 @@ tbody td{padding:11px 14px;font-size:13.5px;color:var(--s700);}
 <!-- ════════ TOAST ════════ -->
 <div class="toast" id="toast"></div>
 
-<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
 <script src="auth.js"></script>
 <script src="admin.js"></script>
@@ -1335,7 +1335,6 @@ tbody td{padding:11px 14px;font-size:13.5px;color:var(--s700);}
     });
 
   /* ── Mobile sidebar toggle ── */
-  // Use var (not const) — this inline script may re-run and const re-declaration throws SyntaxError
   var menuToggle = document.getElementById('menuToggle');
   var sidebar    = document.getElementById('sidebar');
 
@@ -1349,7 +1348,6 @@ tbody td{padding:11px 14px;font-size:13.5px;color:var(--s700);}
       if (ov) ov.classList.toggle('active', sidebar.classList.contains('open'));
     });
 
-    /* Close sidebar when tapping the dedicated overlay */
     var sidebarOverlay = document.getElementById('sidebarOverlay');
     if (sidebarOverlay) {
       sidebarOverlay.addEventListener('click', function() {
@@ -1365,8 +1363,7 @@ tbody td{padding:11px 14px;font-size:13.5px;color:var(--s700);}
     window._resetPasswordUserName = userName;
     document.getElementById('resetPasswordUserName').textContent = userName;
     document.getElementById('resetPasswordEmail').value = knownEmail || '';
-    // Show green note if email is already known, otherwise hide it
-    const     const noteEl = document.getElementById('resetEmailNote');
+    const noteEl   = document.getElementById('resetEmailNote');
     const noteText = document.getElementById('resetEmailNoteText');
     if (knownEmail && noteEl && noteText) {
       noteText.textContent = 'Emel ' + knownEmail + ' akan digunakan.';
