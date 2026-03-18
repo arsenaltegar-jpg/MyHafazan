@@ -93,6 +93,30 @@ body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--slate-100
 .status-red { color: var(--red); }
 .status-gray { color: var(--slate-400); }
 
+/* Coloured left-border accent on student cards
+   We keep the base border shorthand intact and only override left side here */
+.student-card.accent-green  { border-left: 4px solid var(--green);          background: linear-gradient(to right, #f0fdf4 0%, white 60%); }
+.student-card.accent-orange { border-left: 4px solid var(--gold);           background: linear-gradient(to right, #fffbeb 0%, white 60%); }
+.student-card.accent-red    { border-left: 4px solid var(--red);            background: linear-gradient(to right, #fef2f2 0%, white 60%); }
+.student-card.accent-gray   { border-left: 4px solid var(--slate-300);      background: white; }
+
+/* Avatar ring colour by status */
+.sc-avatar.ring-green { box-shadow: 0 0 0 3px rgba(22,163,74,0.35); }
+.sc-avatar.ring-orange { box-shadow: 0 0 0 3px rgba(217,119,6,0.35); }
+.sc-avatar.ring-red { box-shadow: 0 0 0 3px rgba(220,38,38,0.35); background: linear-gradient(135deg,#DC2626,#EF4444); }
+.sc-avatar.ring-gray { box-shadow: none; background: var(--slate-400); }
+
+/* Hutang badge pill */
+.hutang-pill {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 38px; padding: 2px 8px;
+  border-radius: 20px; font-size: 13px; font-weight: 800;
+}
+.hutang-pill.pill-green { background: #dcfce7; color: var(--green); }
+.hutang-pill.pill-orange { background: #fef3c7; color: var(--gold); }
+.hutang-pill.pill-red { background: #fee2e2; color: var(--red); }
+.hutang-pill.pill-gray { background: var(--slate-100); color: var(--slate-400); }
+
 .empty-state { text-align: center; padding: 48px 20px; color: var(--slate-400); background: white; border-radius: 14px; border: 1.5px solid var(--slate-200); }
 .empty-state i { font-size: 40px; margin-bottom: 12px; display: block; }
 .empty-state p { font-size: 14px; line-height: 1.6; }

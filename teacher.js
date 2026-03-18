@@ -87,14 +87,37 @@ async function loadMyStudents() {
         return;
     }
 
-    // Today's RPT target
+    // Today's RPT target — first try rpt_targets by date, then fall back to
+    // student_progress view (which resolves RPT by form level / week the same
+    // way the parent dashboard does), so both pages always agree.
+    let todayTarget = null;
     const { data: rpt } = await supabase
         .from('rpt_targets')
         .select('target_page_total')
         .eq('date', getTodayDate())
         .single();
 
-    const todayTarget = rpt?.target_page_total || null;
+    if (rpt?.target_page_total) {
+        todayTarget = rpt.target_page_total;
+    } else {
+        // Fallback: read from student_progress view (same source as parent dashboard).
+        // We first fetch one student id from this halaqah, then look it up in the view.
+        const { data: oneStudent } = await supabase
+            .from('students')
+            .select('id')
+            .eq('halaqah_id', myHalaqah.id)
+            .eq('is_active', true)
+            .limit(1)
+            .single();
+        if (oneStudent?.id) {
+            const { data: spFallback } = await supabase
+                .from('student_progress')
+                .select('target_page_total')
+                .eq('id', oneStudent.id)
+                .single();
+            todayTarget = spFallback?.target_page_total || null;
+        }
+    }
     const badge = document.getElementById('todayTargetBadge');
     if (badge) badge.innerHTML = todayTarget
         ? `<i class="fas fa-bullseye"></i> Sasaran Hari Ini: ms. ${todayTarget}`
@@ -151,13 +174,19 @@ function renderStudentList(filter = '') {
         let statusClass = 'status-green';
         let statusText = 'Melebihi';
         let statusIcon = 'fa-circle-check';
+        let accentClass = 'accent-green';
+        let ringClass = 'ring-green';
+        let pillClass = 'pill-green';
 
         if (hutang === null) {
             statusClass = 'status-gray'; statusText = 'Tiada RPT'; statusIcon = 'fa-circle-minus';
+            accentClass = 'accent-gray'; ringClass = 'ring-gray'; pillClass = 'pill-gray';
         } else if (hutang > 15) {
             statusClass = 'status-red'; statusText = 'Ketinggalan'; statusIcon = 'fa-circle-exclamation';
+            accentClass = 'accent-red'; ringClass = 'ring-red'; pillClass = 'pill-red';
         } else if (hutang > 0) {
             statusClass = 'status-orange'; statusText = 'Amaran'; statusIcon = 'fa-triangle-exclamation';
+            accentClass = 'accent-orange'; ringClass = 'ring-orange'; pillClass = 'pill-orange';
         } else if (hutang === 0) {
             statusText = 'Tepat';
         }
@@ -167,8 +196,8 @@ function renderStudentList(filter = '') {
         const hutangDisplay = hutang === null ? '–' : hutang > 0 ? `+${hutang}` : `${hutang}`;
 
         return `
-        <div class="student-card" data-id="${student.id}" onclick="openStudentDetail(${student.id})">
-          <div class="sc-avatar">
+        <div class="student-card ${accentClass}" data-id="${student.id}" onclick="openStudentDetail(${student.id})">
+          <div class="sc-avatar ${ringClass}">
             ${student.photo_url
               ? `<img src="${student.photo_url}" alt="${student.full_name}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" />`
               : `<span>${initials}</span>`}
@@ -184,8 +213,8 @@ function renderStudentList(filter = '') {
             </div>
           </div>
           <div class="sc-right">
-            <div class="sc-hutang ${statusClass}">${hutangDisplay}</div>
-            <div class="sc-status ${statusClass}"><i class="fas ${statusIcon}"></i> ${statusText}</div>
+            <div class="hutang-pill ${pillClass}">${hutangDisplay}</div>
+            <div class="sc-status ${statusClass}" style="margin-top:4px;"><i class="fas ${statusIcon}"></i> ${statusText}</div>
             <div class="sc-log-btn" onclick="event.stopPropagation(); openLogModal(${student.id})"><i class="fas fa-pen-to-square"></i> Log</div>
           </div>
         </div>`;
