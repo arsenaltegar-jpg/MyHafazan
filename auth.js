@@ -58,7 +58,7 @@ async function checkBraveAndWarn() {
                 </div>
                 <div style="font-size:12px; color:rgba(255,255,255,0.6); line-height:2;">
                     1. Klik ikon <strong style="color:white;">🦁</strong> di bar alamat<br>
-                    2. Togol <strong style="color:white;">"Shields"</strong> kepada <strong style="color:#86EFAC;">PADAM</strong><br>
+                    2. Toggle <strong style="color:white;">"Shields"</strong> kepada <strong style="color:#86EFAC;">PADAM</strong><br>
                     3. Muat semula halaman ini
                 </div>
             </div>
