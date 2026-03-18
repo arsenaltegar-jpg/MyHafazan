@@ -2,15 +2,15 @@
 // MYHAFAZAN MTSD - admin.js (Enhanced v3 — RPT Plan System)
 // ============================================================
 
-let donutChart = null;
-let barChart = null;
-let allStudents = [];
-let allHalaqahs = [];
-let allTeachers = [];
-let allParents = [];
+var donutChart = null;
+var barChart = null;
+var allStudents = [];
+var allHalaqahs = [];
+var allTeachers = [];
+var allParents = [];
 
 // Juz → page reference (standard Quran 604 pages / 30 juz)
-const JUZ_PAGE_MAP = {
+var JUZ_PAGE_MAP = {
   1:1,2:22,3:42,4:62,5:82,6:102,7:121,8:142,9:162,10:182,
   11:201,12:222,13:242,14:262,15:282,16:302,17:322,18:342,
   19:362,20:382,21:402,22:422,23:442,24:462,25:482,26:502,
@@ -122,20 +122,22 @@ function switchTab(tab) {
     if (tab === 'rpt')           loadRPTManager();
     if (tab === 'announcements') loadAnnouncements();
 }
+window.switchTab = switchTab;
 
 // ============================================================
 // RPT SUB-TAB SWITCHER
 // ============================================================
 
 function switchRptTab(tab) {
-    document.querySelectorAll('.rpt-tab-btn').forEach(b => {
+    document.querySelectorAll('#pane-rpt .rpt-tab-btn').forEach(b => {
         const onclick = b.getAttribute('onclick') || '';
         b.classList.toggle('active', onclick.includes(`'${tab}'`));
     });
-    document.querySelectorAll('.rpt-tab-pane').forEach(p => {
+    document.querySelectorAll('#pane-rpt .rpt-tab-pane').forEach(p => {
         p.classList.toggle('active', p.id === `rpt-pane-${tab}`);
     });
 }
+window.switchRptTab = switchRptTab;
 
 // ============================================================
 // DROPDOWN DATA (shared cache)
@@ -572,7 +574,7 @@ async function loadTeachersTable() {
 // PARENTS TABLE
 // ============================================================
 
-let allParentsCache = [];
+var allParentsCache = [];
 async function loadParentsTable() {
     const tbody = document.getElementById('parentTableBody');
     if (!tbody) return;
@@ -983,10 +985,10 @@ async function deleteAnnouncement(id) {
 // BATCH CSV UPLOAD  (students | teachers | parents)
 // ============================================================
 
-const TEMP_PASSWORD = 'Hafazan@2025';
+var TEMP_PASSWORD = 'Hafazan@2025';
 
 // Per-type state
-const csvState = {
+var csvState = {
     students: { rows: [] },
     teachers: { rows: [] },
     parents:  { rows: [] },
@@ -997,10 +999,11 @@ function switchBatchTab(tab) {
         const onclick = b.getAttribute('onclick') || '';
         b.classList.toggle('active', onclick.includes(`'${tab}'`));
     });
-    document.querySelectorAll('.rpt-tab-pane[id^="batch-pane-"]').forEach(p => {
+    document.querySelectorAll('#pane-batch .rpt-tab-pane').forEach(p => {
         p.classList.toggle('active', p.id === `batch-pane-${tab}`);
     });
 }
+window.switchBatchTab = switchBatchTab;
 
 function initBatchUpload() {
     ['students', 'teachers', 'parents'].forEach(type => {
@@ -1087,6 +1090,7 @@ function clearCSV(type) {
     document.getElementById(`batchResult${cap}`).classList.add('hidden');
     document.getElementById(`csvFile${cap}`).value = '';
 }
+window.clearCSV = clearCSV;
 
 async function importCSV(type) {
     const rows = csvState[type].rows;
@@ -1209,6 +1213,7 @@ async function importCSV(type) {
 
     if (success > 0) showToast(`${success} rekod berjaya diimport!`, 'success');
 }
+window.importCSV = importCSV;
 
 function downloadCSVTemplate(e, type = 'students') {
     e.preventDefault();
@@ -1228,6 +1233,7 @@ function downloadCSVTemplate(e, type = 'students') {
     a.download = filenames[type] || 'template.csv';
     a.click();
 }
+window.downloadCSVTemplate = downloadCSVTemplate;
 
 // ============================================================
 // FORMS
@@ -1399,6 +1405,8 @@ function formatDateMY(d) {
 
 function openModal(id)  { document.getElementById(id)?.classList.add('open'); }
 function closeModal(id) { document.getElementById(id)?.classList.remove('open'); }
+window.openModal  = openModal;
+window.closeModal = closeModal;
 
 document.addEventListener('click', e => {
     if (e.target.classList.contains('modal-ov')) closeModal(e.target.id);
