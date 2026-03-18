@@ -87,58 +87,54 @@ async function loadMyStudents() {
         return;
     }
 
-    // Today's RPT target — first try rpt_targets by date, then fall back to
-    // student_progress view (which resolves RPT by form level / week the same
-    // way the parent dashboard does), so both pages always agree.
-    let todayTarget = null;
-    const { data: rpt } = await supabase
-        .from('rpt_targets')
-        .select('target_page_total')
-        .eq('date', getTodayDate())
-        .single();
-
-    if (rpt?.target_page_total) {
-        todayTarget = rpt.target_page_total;
-    } else {
-        // Fallback: read from student_progress view (same source as parent dashboard).
-        // We first fetch one student id from this halaqah, then look it up in the view.
-        const { data: oneStudent } = await supabase
-            .from('students')
-            .select('id')
-            .eq('halaqah_id', myHalaqah.id)
-            .eq('is_active', true)
-            .limit(1)
-            .single();
-        if (oneStudent?.id) {
-            const { data: spFallback } = await supabase
-                .from('student_progress')
-                .select('target_page_total')
-                .eq('id', oneStudent.id)
-                .single();
-            todayTarget = spFallback?.target_page_total || null;
-        }
-    }
-    const badge = document.getElementById('todayTargetBadge');
-    if (badge) badge.innerHTML = todayTarget
-        ? `<i class="fas fa-bullseye"></i> Sasaran Hari Ini: ms. ${todayTarget}`
-        : `<i class="fas fa-circle-minus"></i> RPT belum ditetapkan untuk hari ini`;
-
-    const { data: students, error } = await supabase
+    // Step 1: get list of active student IDs in this halaqah
+    const { data: rawStudents, error: sErr } = await supabase
         .from('students')
-        .select('*')
+        .select('id')
         .eq('halaqah_id', myHalaqah.id)
-        .eq('is_active', true)
+        .eq('is_active', true);
+
+    if (sErr || !rawStudents?.length) {
+        document.getElementById('studentCount').textContent = '0';
+        myStudents = [];
+        const badge = document.getElementById('todayTargetBadge');
+        if (badge) badge.innerHTML = `<i class="fas fa-circle-minus"></i> Tiada pelajar aktif dalam halaqah ini`;
+        return;
+    }
+
+    const studentIds = rawStudents.map(s => s.id);
+
+    // Step 2: load from student_progress view — same source as parent dashboard.
+    // hutang, target_page_total and status are already resolved per-student
+    // by form level inside the DB view. No manual RPT calculation needed.
+    const { data: progressRows, error: pErr } = await supabase
+        .from('student_progress')
+        .select('*')
+        .in('id', studentIds)
         .order('full_name');
 
-    if (error) { console.error(error); return; }
+    if (pErr) { console.error(pErr); return; }
 
-    myStudents = (students || []).map(s => ({
-        ...s,
-        hutang: todayTarget !== null ? todayTarget - s.current_page : null,
-    }));
-
-    // FIX: show only the number, the label already says "Pelajar"
+    myStudents = progressRows || [];
     document.getElementById('studentCount').textContent = myStudents.length;
+
+    // Badge: students may have different form levels → different RPT targets.
+    // Show a summary rather than a single (wrong) global target.
+    const badge = document.getElementById('todayTargetBadge');
+    if (badge) {
+        const withRpt    = myStudents.filter(s => s.status !== 'no_rpt' && s.status !== 'no_form' && s.target_page_total !== null);
+        const withoutRpt = myStudents.filter(s => s.status === 'no_rpt' || s.target_page_total === null);
+        if (withoutRpt.length === myStudents.length) {
+            badge.innerHTML = `<i class="fas fa-circle-minus"></i> RPT belum ditetapkan untuk semua pelajar`;
+        } else if (withoutRpt.length > 0) {
+            badge.innerHTML = `<i class="fas fa-bullseye"></i> Sasaran RPT aktif: ${withRpt.length} pelajar &nbsp;&middot;&nbsp; <span style="color:#D97706;">${withoutRpt.length} belum ditetapkan</span>`;
+        } else {
+            const targets = [...new Set(withRpt.map(s => s.target_page_total))].sort((a, b) => a - b);
+            badge.innerHTML = targets.length === 1
+                ? `<i class="fas fa-bullseye"></i> Sasaran Hari Ini: ms. ${targets[0]}`
+                : `<i class="fas fa-bullseye"></i> Sasaran RPT: ms. ${targets[0]} – ${targets[targets.length - 1]} (mengikut tingkatan)`;
+        }
+    }
 }
 
 // ============================================================
@@ -171,16 +167,28 @@ function renderStudentList(filter = '') {
 
     const cardsHtml = paged.map(student => {
         const hutang = student.hutang;
+        const status = student.status;
         let statusClass = 'status-green';
-        let statusText = 'Melebihi';
-        let statusIcon = 'fa-circle-check';
+        let statusText  = 'Melebihi';
+        let statusIcon  = 'fa-circle-check';
         let accentClass = 'accent-green';
-        let ringClass = 'ring-green';
-        let pillClass = 'pill-green';
+        let ringClass   = 'ring-green';
+        let pillClass   = 'pill-green';
+        let hutangDisplay = hutang === null ? '–' : hutang > 0 ? `+${hutang}` : `${Math.abs(hutang)}`;
 
-        if (hutang === null) {
-            statusClass = 'status-gray'; statusText = 'Tiada RPT'; statusIcon = 'fa-circle-minus';
+        // Mirror parent.js status logic — use the view's status field first
+        if (status === 'no_form') {
+            statusClass = 'status-gray'; statusText = 'Tingkatan belum ditetapkan'; statusIcon = 'fa-circle-minus';
             accentClass = 'accent-gray'; ringClass = 'ring-gray'; pillClass = 'pill-gray';
+            hutangDisplay = '–';
+        } else if (status === 'no_rpt') {
+            statusClass = 'status-gray'; statusText = 'RPT Belum Ditetapkan'; statusIcon = 'fa-circle-minus';
+            accentClass = 'accent-gray'; ringClass = 'ring-gray'; pillClass = 'pill-gray';
+            hutangDisplay = '–';
+        } else if (hutang === null) {
+            statusClass = 'status-gray'; statusText = 'Tiada Data'; statusIcon = 'fa-circle-minus';
+            accentClass = 'accent-gray'; ringClass = 'ring-gray'; pillClass = 'pill-gray';
+            hutangDisplay = '–';
         } else if (hutang > 15) {
             statusClass = 'status-red'; statusText = 'Ketinggalan'; statusIcon = 'fa-circle-exclamation';
             accentClass = 'accent-red'; ringClass = 'ring-red'; pillClass = 'pill-red';
@@ -190,10 +198,10 @@ function renderStudentList(filter = '') {
         } else if (hutang === 0) {
             statusText = 'Tepat';
         }
+        // hutang < 0 → green (Melebihi), defaults already set
 
         const initials = student.full_name.split(' ').map(w => w[0]).slice(0, 2).join('');
         const juzProgress = Math.min(100, ((student.current_page % 20) / 20) * 100);
-        const hutangDisplay = hutang === null ? '–' : hutang > 0 ? `+${hutang}` : `${hutang}`;
 
         return `
         <div class="student-card ${accentClass}" data-id="${student.id}" onclick="openStudentDetail(${student.id})">
