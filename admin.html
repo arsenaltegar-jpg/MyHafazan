@@ -129,6 +129,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--s100);color:var(--s800);m
 .badge-g{color:var(--g);border-color:rgba(22,163,74,.2);background:var(--gp);}
 .badge-gold{color:var(--gold);border-color:rgba(217,119,6,.2);background:var(--goldp);}
 .badge-r{color:var(--r);border-color:rgba(220,38,38,.2);background:var(--rp);}
+.badge-info{color:#2563EB;border-color:rgba(37,99,235,.2);background:#EFF6FF;}
 
 /* ═══════ PAGE HEADERS ═══════ */
 .page-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px;}
@@ -336,8 +337,11 @@ tbody td{padding:11px 14px;font-size:13.5px;color:var(--s700);}
   .rpt-tabs{flex-wrap:wrap;}
   .rpt-tab-btn{flex:none;flex:1 1 auto;}
 }
+/* Sidebar overlay for mobile tap-outside-to-close */
+#sidebarOverlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:199;}
+#sidebarOverlay.active{display:block;}
+
 @media(max-width:640px){
-  .sidebar.open::after{content:'';position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:-1;}
   .topbar{padding:0 14px;height:54px;}
   .tb-title{font-size:15px;}
   .tb-date{display:none;}
@@ -760,7 +764,7 @@ tbody td{padding:11px 14px;font-size:13.5px;color:var(--s700);}
               <div style="font-size:13px;color:var(--s600);line-height:1.8;">
                 <div style="background:var(--s900);border-radius:9px;padding:14px;font-family:'DM Mono',monospace;font-size:11px;color:#86efac;margin-bottom:14px;overflow-x:auto;">
                   full_name,matric_no,form_level,halaqah_name,parent_email,parent_name,parent_phone,current_page,current_juz<br>
-                  Ahmad Faris,MT2025001,1,Halaqah Al-Baqarah,abu@email.com,Abu Bakar,0123456789,1,1
+                  Ahmad Faris,MT2025001,1,Halaqah Al-Baqarah,<a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="ee8f8c9bae8b838f8782c08d8183">[email&#160;protected]</a>,Abu Bakar,0123456789,1,1
                 </div>
                 <div style="display:flex;flex-direction:column;gap:7px;">
                   <div style="display:flex;gap:8px;"><i class="fas fa-check-circle" style="color:var(--g);margin-top:2px;flex-shrink:0;"></i><span><strong>full_name</strong> – Wajib.</span></div>
@@ -816,8 +820,8 @@ tbody td{padding:11px 14px;font-size:13.5px;color:var(--s700);}
               <div style="font-size:13px;color:var(--s600);line-height:1.8;">
                 <div style="background:var(--s900);border-radius:9px;padding:14px;font-family:'DM Mono',monospace;font-size:11px;color:#86efac;margin-bottom:14px;overflow-x:auto;">
                   full_name,email,phone<br>
-                  Ustaz Ahmad,ustazahmad@sekolah.edu.my,0123456789<br>
-                  Ustazah Siti,ustazahsiti@sekolah.edu.my,0197654321
+                  Ustaz Ahmad,<a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="bfcacccbdec5ded7d2dedbffccdad4d0d3ded791dadbca91d2c6">[email&#160;protected]</a>,0123456789<br>
+                  Ustazah Siti,<a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="98edebecf9e2f9f0ebf1ecf1d8ebfdf3f7f4f9f0b6fdfcedb6f5e1">[email&#160;protected]</a>,0197654321
                 </div>
                 <div style="display:flex;flex-direction:column;gap:7px;">
                   <div style="display:flex;gap:8px;"><i class="fas fa-check-circle" style="color:var(--g);margin-top:2px;flex-shrink:0;"></i><span><strong>full_name</strong> – Wajib.</span></div>
@@ -870,8 +874,8 @@ tbody td{padding:11px 14px;font-size:13.5px;color:var(--s700);}
               <div style="font-size:13px;color:var(--s600);line-height:1.8;">
                 <div style="background:var(--s900);border-radius:9px;padding:14px;font-family:'DM Mono',monospace;font-size:11px;color:#86efac;margin-bottom:14px;overflow-x:auto;">
                   full_name,email,phone<br>
-                  Abu Bakar Abdullah,abu@email.com,0123456789<br>
-                  Ali Hassan,ali@email.com,0197654321
+                  Abu Bakar Abdullah,<a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="92f3f0e7d2f7fff3fbfebcf1fdff">[email&#160;protected]</a>,0123456789<br>
+                  Ali Hassan,<a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="b3d2dfdaf3d6ded2dadf9dd0dcde">[email&#160;protected]</a>,0197654321
                 </div>
                 <div style="display:flex;flex-direction:column;gap:7px;">
                   <div style="display:flex;gap:8px;"><i class="fas fa-check-circle" style="color:var(--g);margin-top:2px;flex-shrink:0;"></i><span><strong>full_name</strong> – Wajib.</span></div>
@@ -1245,7 +1249,7 @@ tbody td{padding:11px 14px;font-size:13.5px;color:var(--s700);}
       <button class="modal-close" onclick="closeModal('resetPasswordModal')"><i class="fas fa-times"></i></button>
     </div>
     <p style="font-size:13px;color:var(--s600);margin-bottom:16px;">Hantar pautan reset kata laluan kepada <strong id="resetPasswordUserName"></strong>.</p>
-    <div id="resetEmailNote" style="display:none;background:rgba(22,163,74,.08);border:1px solid rgba(22,163,74,.2);border-radius:9px;padding:9px 13px;margin-bottom:14px;font-size:12px;color:#16A34A;display:flex;align-items:center;gap:7px;">
+    <div id="resetEmailNote" style="display:none;background:rgba(22,163,74,.08);border:1px solid rgba(22,163,74,.2);border-radius:9px;padding:9px 13px;margin-bottom:14px;font-size:12px;color:#16A34A;align-items:center;gap:7px;">
       <i class="fas fa-circle-check"></i><span id="resetEmailNoteText"></span>
     </div>
     <div class="field">
@@ -1313,10 +1317,13 @@ tbody td{padding:11px 14px;font-size:13.5px;color:var(--s700);}
   </div>
 </div>
 
+<!-- ════════ SIDEBAR OVERLAY (mobile tap-to-close) ════════ -->
+<div id="sidebarOverlay"></div>
+
 <!-- ════════ TOAST ════════ -->
 <div class="toast" id="toast"></div>
 
-<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
 <script src="auth.js"></script>
 <script src="admin.js"></script>
@@ -1336,21 +1343,20 @@ tbody td{padding:11px 14px;font-size:13.5px;color:var(--s700);}
     menuToggle._sidebarBound = true;
 
     menuToggle.addEventListener('click', function(e) {
-      e.stopPropagation();
+      e.preventDefault();
       sidebar.classList.toggle('open');
+      var ov = document.getElementById('sidebarOverlay');
+      if (ov) ov.classList.toggle('active', sidebar.classList.contains('open'));
     });
 
-    /* Close sidebar when clicking outside */
-    document.addEventListener('click', function(e) {
-      if (
-        window.innerWidth <= 900 &&
-        sidebar.classList.contains('open') &&
-        !sidebar.contains(e.target) &&
-        !menuToggle.contains(e.target)
-      ) {
+    /* Close sidebar when tapping the dedicated overlay */
+    var sidebarOverlay = document.getElementById('sidebarOverlay');
+    if (sidebarOverlay) {
+      sidebarOverlay.addEventListener('click', function() {
         sidebar.classList.remove('open');
-      }
-    });
+        sidebarOverlay.classList.remove('active');
+      });
+    }
   }
 
   /* ── Reset Password Modal ── */
@@ -1360,18 +1366,25 @@ tbody td{padding:11px 14px;font-size:13.5px;color:var(--s700);}
     document.getElementById('resetPasswordUserName').textContent = userName;
     document.getElementById('resetPasswordEmail').value = knownEmail || '';
     // Show green note if email is already known, otherwise hide it
-    const noteEl  = document.getElementById('resetEmailNote');
+    const     const noteEl = document.getElementById('resetEmailNote');
     const noteText = document.getElementById('resetEmailNoteText');
-    if (knownEmail) {
-      noteText.textContent = 'Emel diambil dari profil: ' + knownEmail;
+    if (knownEmail && noteEl && noteText) {
+      noteText.textContent = 'Emel ' + knownEmail + ' akan digunakan.';
       noteEl.style.display = 'flex';
-    } else {
+    } else if (noteEl) {
       noteEl.style.display = 'none';
     }
-    document.getElementById('resetPasswordModal').classList.add('open');
-    // Focus email field only if it's empty (no pre-fill)
-    if (!knownEmail) setTimeout(() => document.getElementById('resetPasswordEmail').focus(), 100);
+    if (typeof openModal === 'function') openModal('resetPasswordModal');
   };
-  window.submitResetPasswordModal = async function() {
-    const email = document.getElementById('resetPasswordEmail').value.trim();
-    if (!email) { showToast('Sila mas
+
+  window.submitResetPasswordModal = function() {
+    var email = document.getElementById('resetPasswordEmail').value.trim().toLowerCase();
+    if (!email) { if (typeof showToast === 'function') showToast('Sila masukkan alamat emel.', 'error'); return; }
+    if (typeof adminSendPasswordReset === 'function') {
+      adminSendPasswordReset(email, window._resetPasswordUserName);
+      if (typeof closeModal === 'function') closeModal('resetPasswordModal');
+    }
+  };
+</script>
+</body>
+</html>

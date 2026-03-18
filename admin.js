@@ -105,6 +105,8 @@ function switchTab(tab) {
     if (window.innerWidth <= 900) {
         var sb = document.getElementById('sidebar');
         if (sb) sb.classList.remove('open');
+        var ov = document.getElementById('sidebarOverlay');
+        if (ov) ov.classList.remove('active');
     }
     const titles = {
         dashboard:     'Papan Pemuka Admin',
@@ -127,8 +129,6 @@ function switchTab(tab) {
     if (tab === 'rpt')           loadRPTManager();
     if (tab === 'announcements') loadAnnouncements();
 }
-window.switchTab = switchTab;
-
 // ============================================================
 // RPT SUB-TAB SWITCHER
 // ============================================================
@@ -142,7 +142,6 @@ function switchRptTab(tab) {
         p.classList.toggle('active', p.id === `rpt-pane-${tab}`);
     });
 }
-window.switchRptTab = switchRptTab;
 
 // ============================================================
 // DROPDOWN DATA (shared cache)
@@ -1008,7 +1007,6 @@ function switchBatchTab(tab) {
         p.classList.toggle('active', p.id === `batch-pane-${tab}`);
     });
 }
-window.switchBatchTab = switchBatchTab;
 
 function initBatchUpload() {
     ['students', 'teachers', 'parents'].forEach(type => {
@@ -1095,7 +1093,6 @@ function clearCSV(type) {
     document.getElementById(`batchResult${cap}`).classList.add('hidden');
     document.getElementById(`csvFile${cap}`).value = '';
 }
-window.clearCSV = clearCSV;
 
 async function importCSV(type) {
     const rows = csvState[type].rows;
@@ -1218,7 +1215,6 @@ async function importCSV(type) {
 
     if (success > 0) showToast(`${success} rekod berjaya diimport!`, 'success');
 }
-window.importCSV = importCSV;
 
 function downloadCSVTemplate(e, type = 'students') {
     e.preventDefault();
@@ -1238,7 +1234,6 @@ function downloadCSVTemplate(e, type = 'students') {
     a.download = filenames[type] || 'template.csv';
     a.click();
 }
-window.downloadCSVTemplate = downloadCSVTemplate;
 
 // ============================================================
 // FORMS
@@ -1410,8 +1405,6 @@ function formatDateMY(d) {
 
 function openModal(id)  { document.getElementById(id)?.classList.add('open'); }
 function closeModal(id) { document.getElementById(id)?.classList.remove('open'); }
-window.openModal  = openModal;
-window.closeModal = closeModal;
 
 document.addEventListener('click', e => {
     if (e.target.classList.contains('modal-ov')) closeModal(e.target.id);
