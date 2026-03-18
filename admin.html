@@ -1328,25 +1328,30 @@ tbody td{padding:11px 14px;font-size:13.5px;color:var(--s700);}
     });
 
   /* ── Mobile sidebar toggle ── */
-  const menuToggle = document.getElementById('menuToggle');
-  const sidebar    = document.getElementById('sidebar');
+  // Use var (not const) — this inline script may re-run and const re-declaration throws SyntaxError
+  var menuToggle = document.getElementById('menuToggle');
+  var sidebar    = document.getElementById('sidebar');
 
-  menuToggle.addEventListener('click', function(e) {
-    e.stopPropagation();
-    sidebar.classList.toggle('open');
-  });
+  if (menuToggle && !menuToggle._sidebarBound) {
+    menuToggle._sidebarBound = true;
 
-  /* Close sidebar when clicking outside */
-  document.addEventListener('click', function(e) {
-    if (
-      window.innerWidth <= 900 &&
-      sidebar.classList.contains('open') &&
-      !sidebar.contains(e.target) &&
-      !menuToggle.contains(e.target)
-    ) {
-      sidebar.classList.remove('open');
-    }
-  });
+    menuToggle.addEventListener('click', function(e) {
+      e.stopPropagation();
+      sidebar.classList.toggle('open');
+    });
+
+    /* Close sidebar when clicking outside */
+    document.addEventListener('click', function(e) {
+      if (
+        window.innerWidth <= 900 &&
+        sidebar.classList.contains('open') &&
+        !sidebar.contains(e.target) &&
+        !menuToggle.contains(e.target)
+      ) {
+        sidebar.classList.remove('open');
+      }
+    });
+  }
 
   /* ── Reset Password Modal ── */
   window._resetPasswordUserName = '';

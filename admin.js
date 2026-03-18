@@ -101,6 +101,11 @@ function switchTab(tab) {
     document.querySelectorAll('.tab-pane').forEach(p => {
         p.classList.toggle('active', p.id === `pane-${tab}`);
     });
+    // Auto-close sidebar on mobile after nav tap
+    if (window.innerWidth <= 900) {
+        var sb = document.getElementById('sidebar');
+        if (sb) sb.classList.remove('open');
+    }
     const titles = {
         dashboard:     'Papan Pemuka Admin',
         students:      'Semua Pelajar',
