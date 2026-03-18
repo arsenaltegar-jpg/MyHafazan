@@ -72,19 +72,11 @@ async function login(email, password) {
         return;
     }
 
-    const profile = await fetchProfile(data.user.id);
-    if (!profile) {
-        showAuthError('Profil pengguna tidak dijumpai. Hubungi admin.');
-        await window.supabase.auth.signOut();
-        showAuthLoading(false);
-        return;
-    }
-
-    AppState.session = data.session;
-    AppState.profile = profile;
-    AppState.role = profile.role;
-
-    routeByRole(profile.role);
+    // FIX: Do NOT call fetchProfile or routeByRole here.
+    // signInWithPassword triggers onAuthStateChange(SIGNED_IN) which now
+    // handles the profile fetch and redirect as the single source of truth.
+    // Doing it here too would cause a double-redirect race condition.
+    // We only need to handle the error case above; success is handled by the listener.
 }
 
 // ============================================================
@@ -275,12 +267,17 @@ function watchSession() {
 
 // ============================================================
 // INIT LOGIN PAGE
+// FIX: Removed duplicate getSession() call that raced with
+//      onAuthStateChange, causing intermittent redirect failures.
+//      onAuthStateChange is now the single source of truth.
+//      TOKEN_REFRESHED is now handled (expired-but-refreshable sessions).
+//      isHandling guard prevents double-execution on Google OAuth retry loop.
 // ============================================================
 
 async function initLoginPage() {
-    const formArea      = document.getElementById('loginFormArea');
-    const redirectOv    = document.getElementById('redirectOverlay');
-    const redirectSub   = document.getElementById('redirectSubText');
+    const formArea   = document.getElementById('loginFormArea');
+    const redirectOv = document.getElementById('redirectOverlay');
+    const redirectSub = document.getElementById('redirectSubText');
 
     function showRedirecting(roleName) {
         if (formArea)    formArea.classList.add('hidden-soft');
@@ -291,45 +288,74 @@ async function initLoginPage() {
         }
     }
 
-    // Handle OAuth redirect callback + existing sessions
+    // FIX: Guard flag — prevents the two async paths (INITIAL_SESSION + TOKEN_REFRESHED)
+    // from both running the profile fetch + redirect simultaneously.
+    let isHandling = false;
+
+    // FIX: onAuthStateChange is now the ONLY session check on the login page.
+    // It covers all cases:
+    //   INITIAL_SESSION — user already logged in (valid or freshly refreshed token)
+    //   SIGNED_IN       — just completed email/password or OAuth login
+    //   TOKEN_REFRESHED — access token was expired; Supabase silently refreshed it
+    //                     (this was the main cause of "sometimes doesn't redirect")
     window.supabase.auth.onAuthStateChange(async (event, session) => {
-        if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session) {
-            const profile = await fetchProfile(session.user.id);
-            if (profile) {
-                showRedirecting(profile.role);
-                routeByRole(profile.role);
-            } else {
-                // New Google user — DB trigger may be slightly delayed, retry up to 3x
-                showRedirecting(null);
-                let attempts = 0;
-                const retry = setInterval(async () => {
-                    attempts++;
-                    const retryProfile = await fetchProfile(session.user.id);
-                    if (retryProfile) {
-                        clearInterval(retry);
-                        showRedirecting(retryProfile.role);
-                        routeByRole(retryProfile.role);
-                    } else if (attempts >= 4) {
-                        clearInterval(retry);
-                        if (formArea)   formArea.classList.remove('hidden-soft');
-                        if (redirectOv) redirectOv.classList.remove('show');
-                        showAuthError('Profil tidak dijumpai. Sila hubungi admin.');
-                    }
-                }, 1500);
-            }
+        const shouldHandle =
+            event === 'SIGNED_IN' ||
+            event === 'INITIAL_SESSION' ||
+            event === 'TOKEN_REFRESHED';
+
+        if (!shouldHandle || !session) return;
+
+        // FIX: Prevent double-execution if multiple events fire close together
+        if (isHandling) return;
+        isHandling = true;
+
+        const profile = await fetchProfile(session.user.id);
+        if (profile) {
+            // FIX: Reset flag before redirect so back-navigation re-triggers correctly
+            isHandling = false;
+            AppState.session = session;
+            AppState.profile = profile;
+            AppState.role = profile.role;
+            showRedirecting(profile.role);
+            routeByRole(profile.role);
+        } else if (event === 'SIGNED_IN' && !session.user.app_metadata?.provider?.includes('google')) {
+            // Email/password login — profile genuinely missing (not a timing issue)
+            // Sign out and show error immediately rather than retrying
+            isHandling = false;
+            await window.supabase.auth.signOut();
+            showAuthLoading(false);
+            showAuthError('Profil pengguna tidak dijumpai. Hubungi admin.');
+        } else {
+            // Google/OAuth user — DB trigger may be slightly delayed, retry up to 4x
+            showRedirecting(null);
+            let attempts = 0;
+            const retry = setInterval(async () => {
+                attempts++;
+                const retryProfile = await fetchProfile(session.user.id);
+                if (retryProfile) {
+                    clearInterval(retry);
+                    isHandling = false;
+                    AppState.session = session;
+                    AppState.profile = retryProfile;
+                    AppState.role = retryProfile.role;
+                    showRedirecting(retryProfile.role);
+                    routeByRole(retryProfile.role);
+                } else if (attempts >= 4) {
+                    clearInterval(retry);
+                    isHandling = false; // Allow retry if user tries again
+                    if (formArea)   formArea.classList.remove('hidden-soft');
+                    if (redirectOv) redirectOv.classList.remove('show');
+                    showAuthError('Profil tidak dijumpai. Sila hubungi admin.');
+                }
+            }, 1500);
         }
     });
 
-    // Check if already logged in (also handles the #access_token hash from OAuth)
-    const { data: { session } } = await window.supabase.auth.getSession();
-    if (session) {
-        const profile = await fetchProfile(session.user.id);
-        if (profile) {
-            showRedirecting(profile.role);
-            routeByRole(profile.role);
-            return; // Stop — don't bind form events when redirecting
-        }
-    }
+    // FIX: The old explicit getSession() block that used to live here has been REMOVED.
+    // It caused a race condition: getSession() sometimes returned null mid-refresh
+    // while onAuthStateChange was already handling the refreshed session, resulting
+    // in the login form being shown to an authenticated user.
 
     // Bind login form
     const form = document.getElementById('loginForm');
