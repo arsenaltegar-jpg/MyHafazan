@@ -275,7 +275,8 @@ function openLogModal(studentId) {
     document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('selected'));
     document.querySelector('.type-btn[data-type="jadid"]')?.classList.add('selected');
 
-    loadStudentLogs(studentId);
+    // BUG FIX 2: Do NOT call loadStudentLogs here — log list with edit/delete
+    // belongs only in the Student Detail Panel, not the Log Modal.
 
     const modal = document.getElementById('logModal');
     modal.classList.remove('hidden');
@@ -287,7 +288,7 @@ function closeLogModal() {
     modal.classList.add('hidden');
     modal.classList.remove('flex');
     selectedStudent = null;
-    // FIX #9: Reset edit mode on close
+    // Reset edit mode on close
     const submitBtn = document.getElementById('submitLogBtn');
     if (submitBtn) {
         delete submitBtn.dataset.editLogId;
@@ -295,66 +296,150 @@ function closeLogModal() {
     }
 }
 
+// ============================================================
+// LOAD & RENDER LOGS (Detail Panel only)
+// ============================================================
+
 async function loadStudentLogs(studentId) {
     const { data: logs } = await supabase
         .from('hifz_logs')
         .select('*')
         .eq('student_id', studentId)
+        .order('session_date', { ascending: false })
         .order('created_at', { ascending: false })
-        .limit(5);
+        .limit(30);
 
-    const container = document.getElementById('studentLogs');
+    // BUG FIX 2: Render into #detailLogs (Detail Panel), not #studentLogs (Log Modal)
+    const container = document.getElementById('detailLogs');
     if (!container) return;
 
     const typeLabels = { jadid: 'Hifz Jadid', murajaah_u: 'Murajaah Umum', murajaah_q: 'Murajaah Khas', hadir: 'Kehadiran' };
     const typeColors = { jadid: '#6B21A8', murajaah_u: '#16A34A', murajaah_q: '#D97706', hadir: '#2563EB' };
+    const typeBg     = { jadid: '#F3E8FF', murajaah_u: '#DCFCE7', murajaah_q: '#FEF3C7', hadir: '#DBEAFE' };
 
     if (!logs || !logs.length) {
-        container.innerHTML = '<p style="font-size:12px;color:#94A3B8;text-align:center;padding:12px;">Tiada log tasmik lagi.</p>';
+        container.innerHTML = '<p style="font-size:13px;color:#94A3B8;text-align:center;padding:20px;">Tiada log tasmik lagi.</p>';
         return;
     }
 
-    // FIX #9: Each log shows edit & delete buttons
-    container.innerHTML = logs.map(log => `
-        <div id="log-row-${log.id}" style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #F1F5F9;">
-          <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${typeColors[log.type] || '#94A3B8'};flex-shrink:0;"></span>
-          <div style="flex:1;">
-            <div style="font-size:12px;font-weight:600;color:#334155;">${typeLabels[log.type] || log.type} – ms. ${log.page_number}</div>
-            <div style="font-size:11px;color:#94A3B8;">${formatDateMY(log.session_date)} ${'⭐'.repeat(log.quality_score || 0)}</div>
+    // BUG FIX 1 (part): pass notes safely into editLog — escape backticks/quotes
+    container.innerHTML = logs.map(log => {
+        const pageInfo = log.type === 'hadir' ? '' : `· ms. ${log.page_number}`;
+        const stars = log.quality_score ? '⭐'.repeat(log.quality_score) : '';
+        // Safely encode notes for inline onclick attribute
+        const safeNotes = (log.notes || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\n/g, ' ');
+        return `
+        <div id="log-row-${log.id}" style="display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid #F1F5F9;">
+          <div style="width:34px;height:34px;border-radius:8px;background:${typeBg[log.type]||'#F1F5F9'};display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <span style="width:8px;height:8px;border-radius:50%;background:${typeColors[log.type]||'#94A3B8'};display:block;"></span>
           </div>
-          <button onclick="editLog(${log.id},${log.page_number},'${log.type}',${log.quality_score || 5})" 
-            style="background:#F3E8FF;border:none;color:#6B21A8;border-radius:6px;padding:4px 8px;font-size:11px;cursor:pointer;">
-            <i class="fas fa-pen"></i>
-          </button>
-          <button onclick="deleteLog(${log.id},${selectedStudent?.id})"
-            style="background:#FEE2E2;border:none;color:#DC2626;border-radius:6px;padding:4px 8px;font-size:11px;cursor:pointer;">
-            <i class="fas fa-trash"></i>
-          </button>
-        </div>
-    `).join('');
+          <div style="flex:1;">
+            <div style="font-size:13px;font-weight:700;color:#334155;">${typeLabels[log.type] || log.type} ${pageInfo}</div>
+            <div style="font-size:11px;color:#94A3B8;margin-top:2px;">${formatDateMY(log.session_date)} ${stars}</div>
+            ${log.notes ? `<div style="font-size:12px;color:#64748B;margin-top:4px;font-style:italic;">"${log.notes}"</div>` : ''}
+          </div>
+          <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0;">
+            <button onclick="editLog(${log.id},${log.page_number},'${log.type}',${log.quality_score || 5},'${safeNotes}')"
+              style="background:#F3E8FF;border:none;color:#6B21A8;border-radius:6px;padding:4px 8px;font-size:11px;cursor:pointer;">
+              <i class="fas fa-pen"></i>
+            </button>
+            <button onclick="deleteLog(${log.id},${studentId})"
+              style="background:#FEE2E2;border:none;color:#DC2626;border-radius:6px;padding:4px 8px;font-size:11px;cursor:pointer;">
+              <i class="fas fa-trash"></i>
+            </button>
+          </div>
+        </div>`;
+    }).join('');
 }
 
-// FIX #9: Edit log — pre-fill modal with existing log data
-function editLog(logId, page, type, quality) {
+// ============================================================
+// EDIT LOG
+// BUG FIX 1: Accept and restore notes; open Log Modal from Detail Panel
+// ============================================================
+
+function editLog(logId, page, type, quality, notes = '') {
+    // Open the log modal with this student (selectedStudent is already set from Detail Panel)
+    if (!selectedStudent) return;
+
+    // Open modal
+    const modal = document.getElementById('logModal');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+
+    // Pre-fill fields
     document.getElementById('logPage').value = page;
     document.getElementById('logType').value = type;
     document.getElementById('logQuality').value = quality;
+    document.getElementById('logNotes').value = notes;
+    document.getElementById('modalError').classList.add('hidden');
+
+    // Update student header in modal
+    const initials = selectedStudent.full_name.split(' ').map(w => w[0]).slice(0, 2).join('');
+    document.getElementById('modalStudentName').textContent = selectedStudent.full_name;
+    document.getElementById('modalStudentPage').textContent =
+        `Semasa: ms. ${selectedStudent.current_page} | Juzuk ${selectedStudent.current_juz}`;
+    document.getElementById('modalAvatar').innerHTML = selectedStudent.photo_url
+        ? `<img src="${selectedStudent.photo_url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" />`
+        : `<span>${initials}</span>`;
+
     // Switch type button UI
     document.querySelectorAll('.type-btn').forEach(b => {
         b.classList.toggle('selected', b.dataset.type === type);
     });
-    // Store editing log id
-    document.getElementById('submitLogBtn').dataset.editLogId = logId;
-    document.getElementById('submitLogBtn').innerHTML = '<i class="fas fa-floppy-disk"></i> Kemaskini Log';
+
+    // Store editing log id and update button label
+    const submitBtn = document.getElementById('submitLogBtn');
+    submitBtn.dataset.editLogId = logId;
+    submitBtn.innerHTML = '<i class="fas fa-floppy-disk"></i> Kemaskini Log';
 }
 
-// FIX #9: Delete log
+// ============================================================
+// DELETE LOG
+// BUG FIX 3: After delete, recalculate student current_page from remaining logs
+// ============================================================
+
 async function deleteLog(logId, studentId) {
     if (!confirm('Padam log ini? Tindakan ini tidak boleh dibatalkan.')) return;
+
     const { error } = await supabase.from('hifz_logs').delete().eq('id', logId);
     if (error) { showTeacherToast('Ralat: ' + error.message, 'error'); return; }
+
+    // BUG FIX 3: Recalculate current_page from the next latest jadid log
+    // after deletion so the student card reflects the correct surah/page.
+    const { data: latestLog } = await supabase
+        .from('hifz_logs')
+        .select('page_number')
+        .eq('student_id', studentId)
+        .eq('type', 'jadid')
+        .order('session_date', { ascending: false })
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+    // If no jadid logs remain, fall back to page 1
+    const newPage = latestLog?.page_number || 1;
+    const newJuz  = Math.ceil(newPage / 20);
+
+    await supabase
+        .from('students')
+        .update({ current_page: newPage, current_juz: newJuz })
+        .eq('id', studentId);
+
     showTeacherToast('Log dipadam.', 'success');
+
+    // Refresh student list cards
+    await loadMyStudents();
+    renderStudentList(document.getElementById('searchInput')?.value?.toLowerCase() || '');
+
+    // Refresh detail panel logs if still open
     if (studentId) loadStudentLogs(studentId);
+
+    // Also update the detail panel header to reflect new page/juz
+    const updatedStudent = myStudents.find(s => s.id === studentId);
+    if (updatedStudent) {
+        document.getElementById('detailMeta').textContent =
+            `ms. ${updatedStudent.current_page} · Juzuk ${updatedStudent.current_juz} · T${updatedStudent.form_level || '–'}`;
+    }
 }
 
 // ============================================================
@@ -366,11 +451,11 @@ async function submitLog() {
 
     const submitBtn = document.getElementById('submitLogBtn');
     const editLogId = submitBtn.dataset.editLogId || null;
-    const logType = document.getElementById('logType').value;
+    const logType   = document.getElementById('logType').value;
     const pageNumber = parseInt(document.getElementById('logPage').value);
-    const quality = parseInt(document.getElementById('logQuality').value) || null;
-    const notes = document.getElementById('logNotes').value.trim();
-    const errorEl = document.getElementById('modalError');
+    const quality   = parseInt(document.getElementById('logQuality').value) || null;
+    const notes     = document.getElementById('logNotes').value.trim();
+    const errorEl   = document.getElementById('modalError');
 
     // Attendance log doesn't need page validation
     if (logType !== 'hadir') {
@@ -385,18 +470,46 @@ async function submitLog() {
     submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyimpan...';
     errorEl.classList.add('hidden');
 
+    // Keep track of the student id before modal closes (selectedStudent gets cleared)
+    const currentStudentId = selectedStudent.id;
+
     try {
-        // FIX #9: If editing existing log, use UPDATE not INSERT
         if (editLogId) {
+            // ── UPDATE existing log ──────────────────────────────────────
             const { error: updateError } = await supabase.from('hifz_logs').update({
                 type: logType,
                 page_number: pageNumber || selectedStudent.current_page,
-                quality_score: quality,
+                quality_score: logType === 'hadir' ? null : quality,
                 notes: notes || null,
             }).eq('id', editLogId);
             if (updateError) throw updateError;
+
+            // BUG FIX 1: After editing any jadid log, recalculate current_page
+            // from whichever jadid log is now the latest (by date then created_at).
+            // This ensures edited page numbers are always correctly reflected.
+            if (logType === 'jadid') {
+                const { data: latestJadid } = await supabase
+                    .from('hifz_logs')
+                    .select('page_number')
+                    .eq('student_id', currentStudentId)
+                    .eq('type', 'jadid')
+                    .order('session_date', { ascending: false })
+                    .order('created_at', { ascending: false })
+                    .limit(1)
+                    .maybeSingle();
+
+                if (latestJadid) {
+                    const newJuz = Math.ceil(latestJadid.page_number / 20);
+                    const { error: studentError } = await supabase
+                        .from('students')
+                        .update({ current_page: latestJadid.page_number, current_juz: newJuz })
+                        .eq('id', currentStudentId);
+                    if (studentError) throw studentError;
+                }
+            }
+
         } else {
-            // 1. Insert new log
+            // ── INSERT new log ───────────────────────────────────────────
             const { error: logError } = await supabase.from('hifz_logs').insert({
                 student_id: selectedStudent.id,
                 teacher_id: AppState.profile.id,
@@ -408,7 +521,7 @@ async function submitLog() {
             });
             if (logError) throw logError;
 
-            // 2. Update student page only for Jadid and only if page advances
+            // Update student page only for Jadid and only if page advances
             if (logType === 'jadid' && pageNumber > selectedStudent.current_page) {
                 const newJuz = Math.ceil(pageNumber / 20);
                 const { error: studentError } = await supabase
@@ -419,16 +532,33 @@ async function submitLog() {
             }
         }
 
-        // 3. Refresh
+        // Refresh student list
         await loadMyStudents();
         renderStudentList(document.getElementById('searchInput')?.value?.toLowerCase() || '');
+
+        const wasEditing = !!editLogId;
+        const studentName = selectedStudent.full_name;
+
         closeLogModal();
+
         showTeacherToast(
-            editLogId
-                ? `Log dikemaskini untuk ${selectedStudent.full_name}! ✏️`
-                : `Log berjaya disimpan untuk ${selectedStudent.full_name}! 🎉`,
+            wasEditing
+                ? `Log dikemaskini untuk ${studentName}! ✏️`
+                : `Log berjaya disimpan untuk ${studentName}! 🎉`,
             'success'
         );
+
+        // If the Detail Panel is still open for the same student, refresh its logs
+        const panel = document.getElementById('studentDetailPanel');
+        if (panel && panel.classList.contains('open')) {
+            loadStudentLogs(currentStudentId);
+            // Update detail header meta with fresh data
+            const updatedStudent = myStudents.find(s => s.id === currentStudentId);
+            if (updatedStudent) {
+                document.getElementById('detailMeta').textContent =
+                    `ms. ${updatedStudent.current_page} · Juzuk ${updatedStudent.current_juz} · T${updatedStudent.form_level || '–'}`;
+            }
+        }
 
     } catch (err) {
         errorEl.textContent = 'Ralat: ' + err.message;
@@ -469,7 +599,7 @@ function showTeacherToast(msg, type = 'success') {
 async function openStudentDetail(studentId) {
     const student = myStudents.find(s => s.id === studentId);
     if (!student) return;
-    selectedStudent = student;  // keep track so Log button in detail works
+    selectedStudent = student;  // keep track so Log/Edit buttons in detail work
 
     const panel = document.getElementById('studentDetailPanel');
     if (!panel) return;
@@ -495,7 +625,7 @@ async function openStudentDetail(studentId) {
     panel.classList.remove('hidden');
     panel.classList.add('open');
 
-    // Load logs
+    // Show loading state for both sections
     document.getElementById('detailLogs').innerHTML = '<p style="font-size:12px;color:#94A3B8;text-align:center;padding:20px;"><i class="fas fa-spinner fa-spin"></i> Memuat...</p>';
     document.getElementById('detailStats').innerHTML = '';
 
@@ -509,10 +639,10 @@ async function openStudentDetail(studentId) {
 
     // Stats computation
     const allLogs = logs || [];
-    const jadidLogs = allLogs.filter(l => l.type === 'jadid');
-    const hadirLogs = allLogs.filter(l => l.type === 'hadir');
+    const jadidLogs    = allLogs.filter(l => l.type === 'jadid');
+    const hadirLogs    = allLogs.filter(l => l.type === 'hadir');
     const murajaahLogs = allLogs.filter(l => l.type === 'murajaah_u' || l.type === 'murajaah_q');
-    const avgQuality = jadidLogs.length
+    const avgQuality   = jadidLogs.length
         ? (jadidLogs.reduce((a, l) => a + (l.quality_score || 0), 0) / jadidLogs.length).toFixed(1)
         : '–';
 
@@ -536,30 +666,14 @@ async function openStudentDetail(studentId) {
           </div>
         </div>`;
 
-    const typeLabels = { jadid: 'Hifz Jadid', murajaah_u: 'Murajaah Umum', murajaah_q: 'Murajaah Khas', hadir: 'Kehadiran' };
-    const typeColors = { jadid: '#6B21A8', murajaah_u: '#16A34A', murajaah_q: '#D97706', hadir: '#2563EB' };
-    const typeBg    = { jadid: '#F3E8FF', murajaah_u: '#DCFCE7', murajaah_q: '#FEF3C7', hadir: '#DBEAFE' };
-
     if (!allLogs.length) {
         document.getElementById('detailLogs').innerHTML = '<p style="font-size:13px;color:#94A3B8;text-align:center;padding:20px;">Tiada log tasmik lagi.</p>';
         return;
     }
 
-    document.getElementById('detailLogs').innerHTML = allLogs.map(log => {
-        const pageInfo = log.type === 'hadir' ? '' : `· ms. ${log.page_number}`;
-        const stars = log.quality_score ? '⭐'.repeat(log.quality_score) : '';
-        return `
-        <div style="display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid #F1F5F9;">
-          <div style="width:34px;height:34px;border-radius:8px;background:${typeBg[log.type]||'#F1F5F9'};display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-            <span style="width:8px;height:8px;border-radius:50%;background:${typeColors[log.type]||'#94A3B8'};display:block;"></span>
-          </div>
-          <div style="flex:1;">
-            <div style="font-size:13px;font-weight:700;color:#334155;">${typeLabels[log.type] || log.type} ${pageInfo}</div>
-            <div style="font-size:11px;color:#94A3B8;margin-top:2px;">${formatDateMY(log.session_date)} ${stars}</div>
-            ${log.notes ? `<div style="font-size:12px;color:#64748B;margin-top:4px;font-style:italic;">"${log.notes}"</div>` : ''}
-          </div>
-        </div>`;
-    }).join('');
+    // BUG FIX 2: Delegate log rendering (with edit/delete) to loadStudentLogs()
+    // which now targets #detailLogs correctly.
+    loadStudentLogs(studentId);
 }
 
 function closeStudentDetail() {
