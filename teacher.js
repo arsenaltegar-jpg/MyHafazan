@@ -300,16 +300,23 @@ function closeLogModal() {
 // LOAD & RENDER LOGS (Detail Panel only)
 // ============================================================
 
-async function loadStudentLogs(studentId) {
-    const { data: logs } = await supabase
-        .from('hifz_logs')
-        .select('*')
-        .eq('student_id', studentId)
-        .order('session_date', { ascending: false })
-        .order('created_at', { ascending: false })
-        .limit(30);
+// prefetchedLogs: pass already-fetched logs to avoid a second DB round-trip
+// when called from openStudentDetail which already has the data.
+// If null, fetches fresh from DB (used by deleteLog / submitLog refresh).
+async function loadStudentLogs(studentId, prefetchedLogs = null) {
+    let logs = prefetchedLogs;
+    if (!logs) {
+        const { data } = await supabase
+            .from('hifz_logs')
+            .select('*')
+            .eq('student_id', studentId)
+            .order('session_date', { ascending: false })
+            .order('created_at', { ascending: false })
+            .limit(30);
+        logs = data;
+    }
 
-    // BUG FIX 2: Render into #detailLogs (Detail Panel), not #studentLogs (Log Modal)
+    // Render into #detailLogs (Detail Panel only — not the Log Modal)
     const container = document.getElementById('detailLogs');
     if (!container) return;
 
@@ -358,39 +365,46 @@ async function loadStudentLogs(studentId) {
 // ============================================================
 
 function editLog(logId, page, type, quality, notes = '') {
-    // Open the log modal with this student (selectedStudent is already set from Detail Panel)
+    // selectedStudent is already set from the Detail Panel
     if (!selectedStudent) return;
 
-    // Open modal
-    const modal = document.getElementById('logModal');
-    modal.classList.remove('hidden');
-    modal.classList.add('flex');
+    // The Detail Panel (z-index 1100) sits above the Log Modal (z-index 1000).
+    // Close the panel first, then open the modal after its slide-out animation,
+    // the same way openLogFromDetail() works.
+    closeStudentDetail();
 
-    // Pre-fill fields
-    document.getElementById('logPage').value = page;
-    document.getElementById('logType').value = type;
-    document.getElementById('logQuality').value = quality;
-    document.getElementById('logNotes').value = notes;
-    document.getElementById('modalError').classList.add('hidden');
+    setTimeout(() => {
+        // Open modal
+        const modal = document.getElementById('logModal');
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
 
-    // Update student header in modal
-    const initials = selectedStudent.full_name.split(' ').map(w => w[0]).slice(0, 2).join('');
-    document.getElementById('modalStudentName').textContent = selectedStudent.full_name;
-    document.getElementById('modalStudentPage').textContent =
-        `Semasa: ms. ${selectedStudent.current_page} | Juzuk ${selectedStudent.current_juz}`;
-    document.getElementById('modalAvatar').innerHTML = selectedStudent.photo_url
-        ? `<img src="${selectedStudent.photo_url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" />`
-        : `<span>${initials}</span>`;
+        // Pre-fill fields
+        document.getElementById('logPage').value = page;
+        document.getElementById('logType').value = type;
+        document.getElementById('logQuality').value = quality;
+        document.getElementById('logNotes').value = notes;
+        document.getElementById('modalError').classList.add('hidden');
 
-    // Switch type button UI
-    document.querySelectorAll('.type-btn').forEach(b => {
-        b.classList.toggle('selected', b.dataset.type === type);
-    });
+        // Update student header in modal
+        const initials = selectedStudent.full_name.split(' ').map(w => w[0]).slice(0, 2).join('');
+        document.getElementById('modalStudentName').textContent = selectedStudent.full_name;
+        document.getElementById('modalStudentPage').textContent =
+            `Semasa: ms. ${selectedStudent.current_page} | Juzuk ${selectedStudent.current_juz}`;
+        document.getElementById('modalAvatar').innerHTML = selectedStudent.photo_url
+            ? `<img src="${selectedStudent.photo_url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" />`
+            : `<span>${initials}</span>`;
 
-    // Store editing log id and update button label
-    const submitBtn = document.getElementById('submitLogBtn');
-    submitBtn.dataset.editLogId = logId;
-    submitBtn.innerHTML = '<i class="fas fa-floppy-disk"></i> Kemaskini Log';
+        // Switch type button UI
+        document.querySelectorAll('.type-btn').forEach(b => {
+            b.classList.toggle('selected', b.dataset.type === type);
+        });
+
+        // Store editing log id and update button label
+        const submitBtn = document.getElementById('submitLogBtn');
+        submitBtn.dataset.editLogId = logId;
+        submitBtn.innerHTML = '<i class="fas fa-floppy-disk"></i> Kemaskini Log';
+    }, 320);
 }
 
 // ============================================================
@@ -538,6 +552,7 @@ async function submitLog() {
 
         const wasEditing = !!editLogId;
         const studentName = selectedStudent.full_name;
+        const snapStudentId = currentStudentId; // already captured above
 
         closeLogModal();
 
@@ -548,12 +563,17 @@ async function submitLog() {
             'success'
         );
 
-        // If the Detail Panel is still open for the same student, refresh its logs
+        // Refresh the Detail Panel:
+        // - For a NEW log: panel may still be open → reload its logs.
+        // - For an EDIT from detail: editLog() closed the panel before opening
+        //   the modal, so we re-open it here to show the updated records.
         const panel = document.getElementById('studentDetailPanel');
-        if (panel && panel.classList.contains('open')) {
-            loadStudentLogs(currentStudentId);
-            // Update detail header meta with fresh data
-            const updatedStudent = myStudents.find(s => s.id === currentStudentId);
+        if (wasEditing) {
+            // Re-open detail panel so teacher sees the updated log list
+            openStudentDetail(snapStudentId);
+        } else if (panel && panel.classList.contains('open')) {
+            loadStudentLogs(snapStudentId);
+            const updatedStudent = myStudents.find(s => s.id === snapStudentId);
             if (updatedStudent) {
                 document.getElementById('detailMeta').textContent =
                     `ms. ${updatedStudent.current_page} · Juzuk ${updatedStudent.current_juz} · T${updatedStudent.form_level || '–'}`;
@@ -671,9 +691,8 @@ async function openStudentDetail(studentId) {
         return;
     }
 
-    // BUG FIX 2: Delegate log rendering (with edit/delete) to loadStudentLogs()
-    // which now targets #detailLogs correctly.
-    loadStudentLogs(studentId);
+    // Pass already-fetched logs — no second DB round-trip needed
+    loadStudentLogs(studentId, allLogs);
 }
 
 function closeStudentDetail() {
