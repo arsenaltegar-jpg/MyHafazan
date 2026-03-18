@@ -8,7 +8,6 @@ let allStudents = [];
 let allHalaqahs = [];
 let allTeachers = [];
 let allParents = [];
-let csvParsedRows = [];
 
 // Juz → page reference (standard Quran 604 pages / 30 juz)
 const JUZ_PAGE_MAP = {
@@ -981,34 +980,56 @@ async function deleteAnnouncement(id) {
 }
 
 // ============================================================
-// BATCH CSV UPLOAD
+// BATCH CSV UPLOAD  (students | teachers | parents)
 // ============================================================
 
-function initBatchUpload() {
-    const dropZone = document.getElementById('dropZone');
-    const fileInput = document.getElementById('csvFile');
+const TEMP_PASSWORD = 'Hafazan@2025';
 
-    dropZone?.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
-    dropZone?.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
-    dropZone?.addEventListener('drop', e => {
-        e.preventDefault();
-        dropZone.classList.remove('drag-over');
-        const file = e.dataTransfer.files[0];
-        if (file) handleCSVFile(file);
+// Per-type state
+const csvState = {
+    students: { rows: [] },
+    teachers: { rows: [] },
+    parents:  { rows: [] },
+};
+
+function switchBatchTab(tab) {
+    document.querySelectorAll('#pane-batch .rpt-tab-btn').forEach(b => {
+        const onclick = b.getAttribute('onclick') || '';
+        b.classList.toggle('active', onclick.includes(`'${tab}'`));
     });
-    fileInput?.addEventListener('change', e => {
-        if (e.target.files[0]) handleCSVFile(e.target.files[0]);
+    document.querySelectorAll('.rpt-tab-pane[id^="batch-pane-"]').forEach(p => {
+        p.classList.toggle('active', p.id === `batch-pane-${tab}`);
     });
 }
 
-function handleCSVFile(file) {
+function initBatchUpload() {
+    ['students', 'teachers', 'parents'].forEach(type => {
+        const cap      = type.charAt(0).toUpperCase() + type.slice(1);
+        const dropZone = document.getElementById(`dropZone${cap}`);
+        const fileInput = document.getElementById(`csvFile${cap}`);
+
+        dropZone?.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+        dropZone?.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+        dropZone?.addEventListener('drop', e => {
+            e.preventDefault();
+            dropZone.classList.remove('drag-over');
+            const file = e.dataTransfer.files[0];
+            if (file) handleCSVFile(file, type);
+        });
+        fileInput?.addEventListener('change', e => {
+            if (e.target.files[0]) handleCSVFile(e.target.files[0], type);
+        });
+    });
+}
+
+function handleCSVFile(file, type) {
     if (!file.name.endsWith('.csv')) { showToast('Sila pilih fail .csv sahaja.', 'error'); return; }
     const reader = new FileReader();
-    reader.onload = e => parseCSV(e.target.result);
+    reader.onload = e => parseCSV(e.target.result, type);
     reader.readAsText(file, 'UTF-8');
 }
 
-function parseCSV(text) {
+function parseCSV(text, type) {
     const lines = text.trim().split('\n').filter(l => l.trim());
     if (lines.length < 2) { showToast('Fail CSV kosong atau tiada data.', 'error'); return; }
 
@@ -1021,114 +1042,190 @@ function parseCSV(text) {
         if (obj.full_name) rows.push(obj);
     }
 
-    csvParsedRows = rows;
-    document.getElementById('csvRowCount').textContent = `${rows.length} pelajar dijumpai dalam fail`;
-    document.getElementById('csvPreview').classList.remove('hidden');
-    document.getElementById('batchResult').classList.add('hidden');
+    csvState[type].rows = rows;
+    const cap = type.charAt(0).toUpperCase() + type.slice(1);
+    document.getElementById(`csvRowCount${cap}`).textContent = `${rows.length} rekod dijumpai dalam fail`;
+    document.getElementById(`csvPreview${cap}`).classList.remove('hidden');
+    document.getElementById(`batchResult${cap}`).classList.add('hidden');
 
-    const wrap = document.getElementById('previewTableWrap');
-    wrap.innerHTML = `
-        <table>
-          <thead><tr><th>#</th><th>Nama</th><th>Matrik</th><th>Tingkatan</th><th>Halaqah</th><th>Emel Wali</th></tr></thead>
-          <tbody>${rows.slice(0, 10).map((r, i) => `
-            <tr>
-              <td>${i+1}</td>
-              <td>${r.full_name    || '–'}</td>
-              <td>${r.matric_no   || '–'}</td>
-              <td>${r.form_level  || '–'}</td>
-              <td>${r.halaqah_name || '–'}</td>
-              <td>${r.parent_email || '–'}</td>
-            </tr>`).join('')}
-          ${rows.length > 10 ? `<tr><td colspan="6" style="text-align:center;color:var(--s400);font-size:11px;">...dan ${rows.length-10} lagi</td></tr>` : ''}
-          </tbody>
-        </table>`;
+    const wrap = document.getElementById(`previewTableWrap${cap}`);
+
+    if (type === 'students') {
+        wrap.innerHTML = `
+            <table>
+              <thead><tr><th>#</th><th>Nama</th><th>Matrik</th><th>Tingkatan</th><th>Halaqah</th><th>Emel Wali</th><th>Nama Wali</th><th>Tel. Wali</th></tr></thead>
+              <tbody>${rows.slice(0, 10).map((r, i) => `
+                <tr>
+                  <td>${i+1}</td><td>${r.full_name||'–'}</td><td>${r.matric_no||'–'}</td>
+                  <td>${r.form_level||'–'}</td><td>${r.halaqah_name||'–'}</td>
+                  <td>${r.parent_email||'–'}</td><td>${r.parent_name||'–'}</td><td>${r.parent_phone||'–'}</td>
+                </tr>`).join('')}
+              ${rows.length > 10 ? `<tr><td colspan="8" style="text-align:center;color:var(--s400);font-size:11px;">...dan ${rows.length-10} lagi</td></tr>` : ''}
+              </tbody>
+            </table>`;
+    } else {
+        // teachers or parents — simpler columns
+        wrap.innerHTML = `
+            <table>
+              <thead><tr><th>#</th><th>Nama Penuh</th><th>Emel</th><th>No. Telefon</th></tr></thead>
+              <tbody>${rows.slice(0, 10).map((r, i) => `
+                <tr>
+                  <td>${i+1}</td><td>${r.full_name||'–'}</td>
+                  <td>${r.email||'<span style="color:var(--r);font-size:11px;"><i class="fas fa-triangle-exclamation"></i> Tiada emel</span>'}</td>
+                  <td>${r.phone||'–'}</td>
+                </tr>`).join('')}
+              ${rows.length > 10 ? `<tr><td colspan="4" style="text-align:center;color:var(--s400);font-size:11px;">...dan ${rows.length-10} lagi</td></tr>` : ''}
+              </tbody>
+            </table>`;
+    }
 }
 
-function clearCSV() {
-    csvParsedRows = [];
-    document.getElementById('csvPreview').classList.add('hidden');
-    document.getElementById('batchResult').classList.add('hidden');
-    document.getElementById('csvFile').value = '';
+function clearCSV(type) {
+    const cap = type.charAt(0).toUpperCase() + type.slice(1);
+    csvState[type].rows = [];
+    document.getElementById(`csvPreview${cap}`).classList.add('hidden');
+    document.getElementById(`batchResult${cap}`).classList.add('hidden');
+    document.getElementById(`csvFile${cap}`).value = '';
 }
 
-async function importCSV() {
-    if (!csvParsedRows.length) return;
-    const btn = document.getElementById('importBtn');
+async function importCSV(type) {
+    const rows = csvState[type].rows;
+    if (!rows.length) return;
+
+    const cap = type.charAt(0).toUpperCase() + type.slice(1);
+    const btn = document.getElementById(`importBtn${cap}`);
     btn.disabled = true;
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Mengimport...';
 
-    const halaqahMap = {};
-    allHalaqahs.forEach(h => { halaqahMap[h.name.toLowerCase()] = h.id; });
+    let success = 0, failed = 0, errors = [], skipped = 0;
 
-    // FIX #12: Match parent by EMAIL (was wrongly matching by phone)
-    const { data: parentProfiles } = await supabase.from('profiles').select('id, full_name').eq('role', 'parent');
-    // Also fetch auth users to get their emails via a workaround — use profiles.email if stored,
-    // or fall back to matching by full_name as a secondary option.
-    // Best approach: store email in profiles table. For now match by full_name as a safe fallback.
-    const parentMapByName = {};
-    (parentProfiles || []).forEach(p => {
-        parentMapByName[(p.full_name || '').toLowerCase().trim()] = p.id;
-    });
+    if (type === 'students') {
+        // ── STUDENTS: no Auth account, just insert into students table ──
+        const halaqahMap = {};
+        allHalaqahs.forEach(h => { halaqahMap[h.name.toLowerCase()] = h.id; });
 
-    // Also fetch all parent emails from auth metadata via a Supabase RPC if available
-    // Since anon key can't access auth.users, we match by profile full_name AND
-    // show a warning if parent_email was used (instruct admin to use parent name instead).
-
-    let success = 0, failed = 0, errors = [];
-
-    for (const row of csvParsedRows) {
-        if (!row.full_name) continue;
-        const halaqahId = halaqahMap[(row.halaqah_name || '').toLowerCase()] || null;
-        // FIX #12: Try parent_name first, fall back to parent_email column as name lookup
-        const parentLookupKey = (row.parent_name || row.parent_email || '').toLowerCase().trim();
-        const parentId = parentMapByName[parentLookupKey] || null;
-        const formLevel = row.form_level ? parseInt(row.form_level) : null;
-
-        if (row.halaqah_name && !halaqahId) {
-            errors.push(`"${row.full_name}": Halaqah "${row.halaqah_name}" tidak dijumpai`);
-            failed++; continue;
-        }
-
-        const { error } = await supabase.from('students').insert({
-            full_name:    row.full_name,
-            matric_no:    row.matric_no  || null,
-            halaqah_id:   halaqahId,
-            parent_id:    parentId,
-            form_level:   formLevel,
-            current_page: parseInt(row.current_page) || 1,
-            current_juz:  parseInt(row.current_juz)  || 1,
+        const { data: parentProfiles } = await supabase.from('profiles').select('id, full_name, phone, email').eq('role', 'parent');
+        const parentMapByEmail     = {};
+        const parentMapByComposite = {};
+        const parentMapByName      = {};
+        (parentProfiles || []).forEach(p => {
+            if (p.email) parentMapByEmail[p.email.toLowerCase().trim()] = p.id;
+            const nameKey = (p.full_name || '').toLowerCase().trim();
+            const compKey = nameKey + '|' + (p.phone || '').replace(/\D/g, '');
+            parentMapByComposite[compKey] = p.id;
+            if (!parentMapByName[nameKey]) parentMapByName[nameKey] = p.id;
         });
 
-        if (error) { errors.push(`"${row.full_name}": ${error.message}`); failed++; }
-        else { success++; }
+        for (const row of rows) {
+            if (!row.full_name) continue;
+            const halaqahId = halaqahMap[(row.halaqah_name || '').toLowerCase()] || null;
+            const emailKey  = (row.parent_email || '').toLowerCase().trim();
+            const nameKey   = (row.parent_name  || '').toLowerCase().trim();
+            const digits    = (row.parent_phone || '').replace(/\D/g, '');
+            const compKey   = nameKey + '|' + digits;
+            const parentId  = (emailKey && parentMapByEmail[emailKey])
+                           || (digits   && parentMapByComposite[compKey])
+                           || (nameKey  && parentMapByName[nameKey])
+                           || null;
+
+            if (row.halaqah_name && !halaqahId) {
+                errors.push(`"${row.full_name}": Halaqah "${row.halaqah_name}" tidak dijumpai`);
+                failed++; continue;
+            }
+
+            const { error } = await supabase.from('students').insert({
+                full_name:    row.full_name,
+                matric_no:    row.matric_no  || null,
+                halaqah_id:   halaqahId,
+                parent_id:    parentId,
+                form_level:   row.form_level ? parseInt(row.form_level) : null,
+                current_page: parseInt(row.current_page) || 1,
+                current_juz:  parseInt(row.current_juz)  || 1,
+            });
+            if (error) { errors.push(`"${row.full_name}": ${error.message}`); failed++; }
+            else success++;
+        }
+        if (success > 0) { allStudents = []; }
+
+    } else {
+        // ── TEACHERS or PARENTS: create Supabase Auth account + profile ──
+        const role = type === 'teachers' ? 'teacher' : 'parent';
+
+        for (const row of rows) {
+            if (!row.full_name || !row.email) {
+                errors.push(`"${row.full_name || '(tiada nama)'}": Emel wajib untuk mewujudkan akaun`);
+                failed++; continue;
+            }
+
+            try {
+                await adminCreateUser(row.full_name.trim(), row.email.trim().toLowerCase(), TEMP_PASSWORD, role);
+
+                // Store phone if provided — profiles row is created by adminCreateUser, just update phone
+                if (row.phone) {
+                    await supabase.from('profiles')
+                        .update({ phone: row.phone.trim() })
+                        .eq('email', row.email.trim().toLowerCase());
+                }
+                success++;
+            } catch (err) {
+                // Gracefully skip duplicate emails
+                if (err.message?.toLowerCase().includes('already registered') ||
+                    err.message?.toLowerCase().includes('already been registered') ||
+                    err.message?.toLowerCase().includes('user already exists')) {
+                    errors.push(`"${row.full_name}": Emel sudah berdaftar — dilangkau`);
+                    skipped++;
+                } else {
+                    errors.push(`"${row.full_name}": ${err.message}`);
+                    failed++;
+                }
+            }
+        }
+
+        // Refresh dropdown caches
+        await loadDropdownData();
     }
 
     btn.disabled = false;
     btn.innerHTML = '<i class="fas fa-upload"></i> Import Sekarang';
 
-    const resultEl = document.getElementById('batchResult');
+    const resultEl = document.getElementById(`batchResult${cap}`);
     resultEl.classList.remove('hidden');
+
+    const skippedNote = skipped > 0 ? ` · ${skipped} dilangkau (emel duplikat)` : '';
 
     if (failed === 0) {
         resultEl.className = 'batch-result batch-ok';
-        // FIX #2: Guided message telling admin next step
-        resultEl.innerHTML = `<i class="fas fa-circle-check"></i> ${success} pelajar berjaya diimport!
-            <br><small style="font-weight:400;">Langkah seterusnya: Pergi ke tab <strong>Semua Pelajar</strong> → Edit pelajar untuk sahkan wali dan halaqah telah ditetapkan.</small>`;
+        let nextStep = '';
+        if (type === 'students')
+            nextStep = 'Pergi ke tab <strong>Semua Pelajar</strong> untuk sahkan wali dan halaqah.';
+        else
+            nextStep = `Hantar reset kata laluan kepada setiap ${type === 'teachers' ? 'murabbi' : 'ibu bapa'} supaya mereka boleh tukar dari kata laluan sementara.`;
+        resultEl.innerHTML = `<i class="fas fa-circle-check"></i> ${success} rekod berjaya diimport!${skippedNote}
+            <br><small style="font-weight:400;">Langkah seterusnya: ${nextStep}</small>`;
     } else {
         resultEl.className = 'batch-result batch-err';
-        resultEl.innerHTML = `<i class="fas fa-triangle-exclamation"></i> ${success} berjaya, ${failed} gagal.<br><small>${errors.slice(0,3).join('<br>')}</small>`;
+        resultEl.innerHTML = `<i class="fas fa-triangle-exclamation"></i> ${success} berjaya, ${failed} gagal${skippedNote}.<br><small>${errors.slice(0,3).join('<br>')}</small>`;
     }
 
-    if (success > 0) { allStudents = []; showToast(`${success} pelajar berjaya diimport!`, 'success'); }
+    if (success > 0) showToast(`${success} rekod berjaya diimport!`, 'success');
 }
 
-function downloadCSVTemplate(e) {
+function downloadCSVTemplate(e, type = 'students') {
     e.preventDefault();
-    // FIX #12: Use parent_name (full name) for matching, not email
-    const csv = 'full_name,matric_no,form_level,halaqah_name,parent_name,current_page,current_juz\nAhmad Faris,MT2025001,1,Halaqah Al-Baqarah,Abu Bakar Abdullah,1,1\nSiti Aisyah,MT2025002,2,Halaqah Al-Fatihah,Ali Hassan,20,1';
+    // parent_email is primary key (stored by adminCreateUser); parent_name+parent_phone are fallbacks
+    const templates = {
+        students: 'full_name,matric_no,form_level,halaqah_name,parent_email,parent_name,parent_phone,current_page,current_juz\nAhmad Faris,MT2025001,1,Halaqah Al-Baqarah,abu@email.com,Abu Bakar Abdullah,0123456789,1,1\nSiti Aisyah,MT2025002,2,Halaqah Al-Fatihah,ali@email.com,Ali Hassan,0197654321,20,1',
+        teachers: 'full_name,email,phone\nUstaz Ahmad,ustazahmad@sekolah.edu.my,0123456789\nUstazah Siti,ustazahsiti@sekolah.edu.my,0197654321',
+        parents:  'full_name,email,phone\nAbu Bakar Abdullah,abu@email.com,0123456789\nAli Hassan,ali@email.com,0197654321',
+    };
+    const filenames = {
+        students: 'template-pelajar.csv',
+        teachers: 'template-murabbi.csv',
+        parents:  'template-ibubapa.csv',
+    };
     const a = document.createElement('a');
-    a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
-    a.download = 'template-pelajar.csv';
+    a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(templates[type] || templates.students);
+    a.download = filenames[type] || 'template.csv';
     a.click();
 }
 
@@ -1462,6 +1559,7 @@ async function submitEditParent() {
 // ============================================================
 window.switchTab             = switchTab;
 window.switchRptTab          = switchRptTab;
+window.switchBatchTab        = switchBatchTab;
 window.showToast             = showToast;
 window.openModal             = openModal;
 window.closeModal            = closeModal;

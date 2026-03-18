@@ -710,56 +710,181 @@ tbody td{padding:11px 14px;font-size:13.5px;color:var(--s700);}
       <div class="page-hd">
         <div class="page-hd-left">
           <h2>Muat Naik CSV (Batch)</h2>
-          <p>Daftarkan banyak pelajar sekaligus menggunakan fail CSV</p>
-        </div>
-        <a id="downloadTemplate" class="btn-secondary" href="#" onclick="downloadCSVTemplate(event)"><i class="fas fa-file-arrow-down"></i> Muat Turun Template</a>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;">
-        <div class="card">
-          <div class="card-hd"><div class="card-title"><i class="fas fa-file-csv"></i> Upload Fail CSV</div></div>
-          <div class="card-body">
-            <div class="drop-zone" id="dropZone" onclick="document.getElementById('csvFile').click()">
-              <i class="fas fa-cloud-arrow-up"></i>
-              <div class="dz-title">Seret & lepas fail CSV di sini</div>
-              <div class="dz-sub">atau <span class="dz-link">klik untuk pilih fail</span></div>
-              <div class="dz-sub" style="margin-top:4px;font-size:11px;color:var(--s400);">Format: full_name, matric_no, form_level, halaqah_name, parent_email</div>
-            </div>
-            <input type="file" id="csvFile" accept=".csv" class="hidden" />
-            <div id="csvPreview" class="hidden">
-              <div style="display:flex;align-items:center;justify-content:space-between;margin-top:14px;margin-bottom:8px;">
-                <div style="font-size:13px;font-weight:600;color:var(--s700);" id="csvRowCount"></div>
-                <button class="btn-sm btn-danger" onclick="clearCSV()"><i class="fas fa-times"></i> Kosongkan</button>
-              </div>
-              <div class="preview-table" id="previewTableWrap"></div>
-              <button class="btn-primary" style="width:100%;justify-content:center;margin-top:14px;" id="importBtn" onclick="importCSV()">
-                <i class="fas fa-upload"></i> Import Sekarang
-              </button>
-            </div>
-            <div id="batchResult" class="hidden"></div>
-          </div>
-        </div>
-        <div class="card">
-          <div class="card-hd"><div class="card-title"><i class="fas fa-circle-info"></i> Panduan Format CSV</div></div>
-          <div class="card-body">
-            <div style="font-size:13px;color:var(--s600);line-height:1.8;">
-              <p style="margin-bottom:12px;">Pastikan fail CSV anda mengikut format berikut:</p>
-              <div style="background:var(--s900);border-radius:9px;padding:14px;font-family:'DM Mono',monospace;font-size:12px;color:#86efac;margin-bottom:14px;overflow-x:auto;">
-                full_name,matric_no,form_level,halaqah_name,parent_email<br>
-                Ahmad Faris,MT2025001,1,Halaqah Al-Baqarah,<a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="aacbc8dfeacfc7cbc3c684c9c5c7">[email&#160;protected]</a><br>
-                Siti Aisyah,MT2025002,2,Halaqah Al-Fatihah,<a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="38595451785d55595154165b5755">[email&#160;protected]</a>
-              </div>
-              <div style="display:flex;flex-direction:column;gap:8px;">
-                <div style="display:flex;gap:8px;align-items:flex-start;"><i class="fas fa-check-circle" style="color:var(--g);margin-top:2px;flex-shrink:0;"></i><span><strong>full_name</strong> – Wajib.</span></div>
-                <div style="display:flex;gap:8px;align-items:flex-start;"><i class="fas fa-check-circle" style="color:var(--g);margin-top:2px;flex-shrink:0;"></i><span><strong>matric_no</strong> – Pilihan.</span></div>
-                <div style="display:flex;gap:8px;align-items:flex-start;"><i class="fas fa-check-circle" style="color:var(--g);margin-top:2px;flex-shrink:0;"></i><span><strong>form_level</strong> – Tingkatan 1–5. Penting untuk RPT automatik.</span></div>
-                <div style="display:flex;gap:8px;align-items:flex-start;"><i class="fas fa-check-circle" style="color:var(--g);margin-top:2px;flex-shrink:0;"></i><span><strong>halaqah_name</strong> – Nama halaqah sedia ada.</span></div>
-                <div style="display:flex;gap:8px;align-items:flex-start;"><i class="fas fa-check-circle" style="color:var(--g);margin-top:2px;flex-shrink:0;"></i><span><strong>parent_email</strong> – Emel Ibu Bapa yang sudah berdaftar.</span></div>
-                <div style="display:flex;gap:8px;align-items:flex-start;"><i class="fas fa-info-circle" style="color:var(--gold);margin-top:2px;flex-shrink:0;"></i><span>Halaqah dan Ibu Bapa perlu wujud dahulu sebelum import.</span></div>
-              </div>
-            </div>
-          </div>
+          <p>Daftarkan Murabbi, Ibu Bapa, dan Pelajar secara pukal menggunakan fail CSV</p>
         </div>
       </div>
+
+      <!-- Batch sub-tabs -->
+      <div class="rpt-tabs" style="margin-bottom:20px;">
+        <button class="rpt-tab-btn active" onclick="switchBatchTab('students')"><i class="fas fa-user-graduate"></i> Pelajar</button>
+        <button class="rpt-tab-btn" onclick="switchBatchTab('teachers')"><i class="fas fa-chalkboard-user"></i> Murabbi</button>
+        <button class="rpt-tab-btn" onclick="switchBatchTab('parents')"><i class="fas fa-users"></i> Ibu Bapa</button>
+      </div>
+
+      <!-- ── STUDENTS ── -->
+      <div class="rpt-tab-pane active" id="batch-pane-students">
+        <div class="info-banner">
+          <i class="fas fa-circle-info"></i>
+          <span>Pelajar <strong>tidak</strong> memerlukan akaun log masuk. Hanya data profil sahaja disimpan. Pastikan Halaqah dan Ibu Bapa sudah wujud dahulu.</span>
+        </div>
+        <div style="display:flex;justify-content:flex-end;margin-bottom:14px;">
+          <a class="btn-secondary" href="#" onclick="downloadCSVTemplate(event,'students')"><i class="fas fa-file-arrow-down"></i> Muat Turun Template Pelajar</a>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;">
+          <div class="card">
+            <div class="card-hd"><div class="card-title"><i class="fas fa-file-csv"></i> Upload CSV Pelajar</div></div>
+            <div class="card-body">
+              <div class="drop-zone" id="dropZoneStudents" onclick="document.getElementById('csvFileStudents').click()">
+                <i class="fas fa-cloud-arrow-up"></i>
+                <div class="dz-title">Seret & lepas fail CSV di sini</div>
+                <div class="dz-sub">atau <span class="dz-link">klik untuk pilih fail</span></div>
+                <div class="dz-sub" style="margin-top:4px;font-size:11px;color:var(--s400);">full_name, matric_no, form_level, halaqah_name, parent_email, parent_name, parent_phone, current_page, current_juz</div>
+              </div>
+              <input type="file" id="csvFileStudents" accept=".csv" class="hidden" />
+              <div id="csvPreviewStudents" class="hidden">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-top:14px;margin-bottom:8px;">
+                  <div style="font-size:13px;font-weight:600;color:var(--s700);" id="csvRowCountStudents"></div>
+                  <button class="btn-sm btn-danger" onclick="clearCSV('students')"><i class="fas fa-times"></i> Kosongkan</button>
+                </div>
+                <div class="preview-table" id="previewTableWrapStudents"></div>
+                <button class="btn-primary" style="width:100%;justify-content:center;margin-top:14px;" id="importBtnStudents" onclick="importCSV('students')">
+                  <i class="fas fa-upload"></i> Import Sekarang
+                </button>
+              </div>
+              <div id="batchResultStudents" class="hidden"></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-hd"><div class="card-title"><i class="fas fa-circle-info"></i> Panduan Format – Pelajar</div></div>
+            <div class="card-body">
+              <div style="font-size:13px;color:var(--s600);line-height:1.8;">
+                <div style="background:var(--s900);border-radius:9px;padding:14px;font-family:'DM Mono',monospace;font-size:11px;color:#86efac;margin-bottom:14px;overflow-x:auto;">
+                  full_name,matric_no,form_level,halaqah_name,parent_email,parent_name,parent_phone,current_page,current_juz<br>
+                  Ahmad Faris,MT2025001,1,Halaqah Al-Baqarah,abu@email.com,Abu Bakar,0123456789,1,1
+                </div>
+                <div style="display:flex;flex-direction:column;gap:7px;">
+                  <div style="display:flex;gap:8px;"><i class="fas fa-check-circle" style="color:var(--g);margin-top:2px;flex-shrink:0;"></i><span><strong>full_name</strong> – Wajib.</span></div>
+                  <div style="display:flex;gap:8px;"><i class="fas fa-check-circle" style="color:var(--g);margin-top:2px;flex-shrink:0;"></i><span><strong>matric_no</strong> – Pilihan.</span></div>
+                  <div style="display:flex;gap:8px;"><i class="fas fa-check-circle" style="color:var(--g);margin-top:2px;flex-shrink:0;"></i><span><strong>form_level</strong> – Tingkatan 1–5. Penting untuk RPT.</span></div>
+                  <div style="display:flex;gap:8px;"><i class="fas fa-check-circle" style="color:var(--g);margin-top:2px;flex-shrink:0;"></i><span><strong>halaqah_name</strong> – Nama halaqah sedia ada.</span></div>
+                  <div style="display:flex;gap:8px;"><i class="fas fa-check-circle" style="color:var(--g);margin-top:2px;flex-shrink:0;"></i><span><strong>parent_email</strong> – <em>Diutamakan</em> untuk padanan wali.</span></div>
+                  <div style="display:flex;gap:8px;"><i class="fas fa-check-circle" style="color:var(--g);margin-top:2px;flex-shrink:0;"></i><span><strong>parent_name / parent_phone</strong> – Sandaran jika tiada emel.</span></div>
+                  <div style="display:flex;gap:8px;"><i class="fas fa-check-circle" style="color:var(--g);margin-top:2px;flex-shrink:0;"></i><span><strong>current_page / current_juz</strong> – Default: 1.</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── TEACHERS ── -->
+      <div class="rpt-tab-pane" id="batch-pane-teachers">
+        <div class="info-banner" style="background:var(--pp);border-color:rgba(107,33,168,.15);">
+          <i class="fas fa-key" style="color:var(--p);"></i>
+          <span>Akaun Supabase Auth akan diwujudkan secara automatik dengan <strong>kata laluan sementara: <code style="background:rgba(107,33,168,.12);padding:1px 6px;border-radius:4px;">Hafazan@2025</code></strong>. Murabbi perlu tukar kata laluan selepas log masuk pertama.</span>
+        </div>
+        <div style="display:flex;justify-content:flex-end;margin-bottom:14px;">
+          <a class="btn-secondary" href="#" onclick="downloadCSVTemplate(event,'teachers')"><i class="fas fa-file-arrow-down"></i> Muat Turun Template Murabbi</a>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;">
+          <div class="card">
+            <div class="card-hd"><div class="card-title"><i class="fas fa-file-csv"></i> Upload CSV Murabbi</div></div>
+            <div class="card-body">
+              <div class="drop-zone" id="dropZoneTeachers" onclick="document.getElementById('csvFileTeachers').click()">
+                <i class="fas fa-cloud-arrow-up"></i>
+                <div class="dz-title">Seret & lepas fail CSV di sini</div>
+                <div class="dz-sub">atau <span class="dz-link">klik untuk pilih fail</span></div>
+                <div class="dz-sub" style="margin-top:4px;font-size:11px;color:var(--s400);">full_name, email, phone</div>
+              </div>
+              <input type="file" id="csvFileTeachers" accept=".csv" class="hidden" />
+              <div id="csvPreviewTeachers" class="hidden">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-top:14px;margin-bottom:8px;">
+                  <div style="font-size:13px;font-weight:600;color:var(--s700);" id="csvRowCountTeachers"></div>
+                  <button class="btn-sm btn-danger" onclick="clearCSV('teachers')"><i class="fas fa-times"></i> Kosongkan</button>
+                </div>
+                <div class="preview-table" id="previewTableWrapTeachers"></div>
+                <button class="btn-primary" style="width:100%;justify-content:center;margin-top:14px;" id="importBtnTeachers" onclick="importCSV('teachers')">
+                  <i class="fas fa-upload"></i> Import Sekarang
+                </button>
+              </div>
+              <div id="batchResultTeachers" class="hidden"></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-hd"><div class="card-title"><i class="fas fa-circle-info"></i> Panduan Format – Murabbi</div></div>
+            <div class="card-body">
+              <div style="font-size:13px;color:var(--s600);line-height:1.8;">
+                <div style="background:var(--s900);border-radius:9px;padding:14px;font-family:'DM Mono',monospace;font-size:11px;color:#86efac;margin-bottom:14px;overflow-x:auto;">
+                  full_name,email,phone<br>
+                  Ustaz Ahmad,ustazahmad@sekolah.edu.my,0123456789<br>
+                  Ustazah Siti,ustazahsiti@sekolah.edu.my,0197654321
+                </div>
+                <div style="display:flex;flex-direction:column;gap:7px;">
+                  <div style="display:flex;gap:8px;"><i class="fas fa-check-circle" style="color:var(--g);margin-top:2px;flex-shrink:0;"></i><span><strong>full_name</strong> – Wajib.</span></div>
+                  <div style="display:flex;gap:8px;"><i class="fas fa-check-circle" style="color:var(--g);margin-top:2px;flex-shrink:0;"></i><span><strong>email</strong> – Wajib. Digunakan untuk log masuk.</span></div>
+                  <div style="display:flex;gap:8px;"><i class="fas fa-check-circle" style="color:var(--g);margin-top:2px;flex-shrink:0;"></i><span><strong>phone</strong> – Pilihan.</span></div>
+                  <div style="display:flex;gap:8px;"><i class="fas fa-info-circle" style="color:var(--gold);margin-top:2px;flex-shrink:0;"></i><span>Kata laluan sementara: <strong>Hafazan@2025</strong>. Hantar reset emel selepas import.</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── PARENTS ── -->
+      <div class="rpt-tab-pane" id="batch-pane-parents">
+        <div class="info-banner" style="background:var(--goldp);border-color:rgba(217,119,6,.2);">
+          <i class="fas fa-key" style="color:var(--gold);"></i>
+          <span>Akaun Supabase Auth akan diwujudkan secara automatik dengan <strong>kata laluan sementara: <code style="background:rgba(217,119,6,.12);padding:1px 6px;border-radius:4px;">Hafazan@2025</code></strong>. Ibu Bapa perlu tukar kata laluan selepas log masuk pertama.</span>
+        </div>
+        <div style="display:flex;justify-content:flex-end;margin-bottom:14px;">
+          <a class="btn-secondary" href="#" onclick="downloadCSVTemplate(event,'parents')"><i class="fas fa-file-arrow-down"></i> Muat Turun Template Ibu Bapa</a>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;">
+          <div class="card">
+            <div class="card-hd"><div class="card-title"><i class="fas fa-file-csv"></i> Upload CSV Ibu Bapa</div></div>
+            <div class="card-body">
+              <div class="drop-zone" id="dropZoneParents" onclick="document.getElementById('csvFileParents').click()">
+                <i class="fas fa-cloud-arrow-up"></i>
+                <div class="dz-title">Seret & lepas fail CSV di sini</div>
+                <div class="dz-sub">atau <span class="dz-link">klik untuk pilih fail</span></div>
+                <div class="dz-sub" style="margin-top:4px;font-size:11px;color:var(--s400);">full_name, email, phone</div>
+              </div>
+              <input type="file" id="csvFileParents" accept=".csv" class="hidden" />
+              <div id="csvPreviewParents" class="hidden">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-top:14px;margin-bottom:8px;">
+                  <div style="font-size:13px;font-weight:600;color:var(--s700);" id="csvRowCountParents"></div>
+                  <button class="btn-sm btn-danger" onclick="clearCSV('parents')"><i class="fas fa-times"></i> Kosongkan</button>
+                </div>
+                <div class="preview-table" id="previewTableWrapParents"></div>
+                <button class="btn-primary" style="width:100%;justify-content:center;margin-top:14px;" id="importBtnParents" onclick="importCSV('parents')">
+                  <i class="fas fa-upload"></i> Import Sekarang
+                </button>
+              </div>
+              <div id="batchResultParents" class="hidden"></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-hd"><div class="card-title"><i class="fas fa-circle-info"></i> Panduan Format – Ibu Bapa</div></div>
+            <div class="card-body">
+              <div style="font-size:13px;color:var(--s600);line-height:1.8;">
+                <div style="background:var(--s900);border-radius:9px;padding:14px;font-family:'DM Mono',monospace;font-size:11px;color:#86efac;margin-bottom:14px;overflow-x:auto;">
+                  full_name,email,phone<br>
+                  Abu Bakar Abdullah,abu@email.com,0123456789<br>
+                  Ali Hassan,ali@email.com,0197654321
+                </div>
+                <div style="display:flex;flex-direction:column;gap:7px;">
+                  <div style="display:flex;gap:8px;"><i class="fas fa-check-circle" style="color:var(--g);margin-top:2px;flex-shrink:0;"></i><span><strong>full_name</strong> – Wajib.</span></div>
+                  <div style="display:flex;gap:8px;"><i class="fas fa-check-circle" style="color:var(--g);margin-top:2px;flex-shrink:0;"></i><span><strong>email</strong> – Wajib. Digunakan untuk log masuk dan padanan pelajar.</span></div>
+                  <div style="display:flex;gap:8px;"><i class="fas fa-check-circle" style="color:var(--g);margin-top:2px;flex-shrink:0;"></i><span><strong>phone</strong> – Pilihan. Membantu padanan jika nama serupa.</span></div>
+                  <div style="display:flex;gap:8px;"><i class="fas fa-info-circle" style="color:var(--gold);margin-top:2px;flex-shrink:0;"></i><span>Kata laluan sementara: <strong>Hafazan@2025</strong>. Hantar reset emel selepas import.</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
     </div>
 
     <!-- ════════ RPT MODULE ════════ -->
@@ -1191,7 +1316,7 @@ tbody td{padding:11px 14px;font-size:13.5px;color:var(--s700);}
 <!-- ════════ TOAST ════════ -->
 <div class="toast" id="toast"></div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
 <script src="auth.js"></script>
 <script src="admin.js"></script>
@@ -1244,13 +1369,4 @@ tbody td{padding:11px 14px;font-size:13.5px;color:var(--s700);}
   };
   window.submitResetPasswordModal = async function() {
     const email = document.getElementById('resetPasswordEmail').value.trim();
-    if (!email) { showToast('Sila masukkan alamat emel.', 'error'); return; }
-    closeModal('resetPasswordModal');
-    await adminSendPasswordReset(email, window._resetPasswordUserName);
-  };
-  document.getElementById('resetPasswordEmail').addEventListener('keydown', function(e) {
-    if (e.key === 'Enter') window.submitResetPasswordModal();
-  });
-</script>
-</body>
-</html>
+    if (!email) { showToast('Sila mas
