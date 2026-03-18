@@ -113,7 +113,7 @@ function switchTab(tab) {
         students:      'Semua Pelajar',
         halaqah:       'Pengurusan Halaqah',
         teachers:      'Senarai Murabbi',
-        parents:       'Senarai Wali Murid',
+        parents:       'Senarai Ibu Bapa Murid',
         register:      'Daftar Pengguna & Pelajar',
         batch:         'Muat Naik CSV',
         rpt:           'Pengurusan RPT',
@@ -161,7 +161,7 @@ async function loadDropdownData() {
     populateSelects('.sel-teacher',      allTeachers, '-- Pilih Murabbi --');
     populateSelects('.sel-halaqah',      allHalaqahs, '-- Pilih Halaqah --');
     populateSelects('.sel-halaqah-edit', allHalaqahs, '-- Pilih Halaqah --');
-    populateSelects('.sel-parent',       allParents,  '-- Tiada Wali --');
+    populateSelects('.sel-parent',       allParents,  '-- Tiada Ibu Bapa --');
 
     const hf = document.getElementById('halaqahFilter');
     if (hf) {
@@ -588,7 +588,7 @@ async function loadParentsTable() {
     allParentsCache = parents || [];
 
     if (!allParentsCache.length) {
-        tbody.innerHTML = '<tr class="empty-row"><td colspan="5">Tiada wali berdaftar.</td></tr>';
+        tbody.innerHTML = '<tr class="empty-row"><td colspan="5">Tiada ibu bapa berdaftar.</td></tr>';
         return;
     }
 
@@ -661,7 +661,7 @@ async function openEditStudentModal(id, name, page, juz, halaqahId, formLevel) {
 
     const { data: student } = await supabase.from('students').select('parent_id').eq('id', id).single();
     const selP = document.getElementById('editStudentParent');
-    selP.innerHTML = '<option value="">-- Tiada Wali --</option>' +
+    selP.innerHTML = '<option value="">-- Tiada Ibu Bapa --</option>' +
         allParents.map(p => `<option value="${p.id}" ${p.id === student?.parent_id ? 'selected' : ''}>${p.full_name}</option>`).join('');
 
     openModal('editStudentModal');
@@ -957,7 +957,7 @@ async function loadAnnouncements() {
     if (!el) return;
     if (!data?.length) { el.innerHTML = '<div class="empty-msg">Tiada pengumuman lagi.</div>'; return; }
 
-    const roleLabels = { teacher: 'Murabbi', parent: 'Wali', student: 'Pelajar' };
+    const roleLabels = { teacher: 'Murabbi', parent: 'IbuBapa', student: 'Pelajar' };
     el.innerHTML = data.map(a => `
         <div style="padding:14px 0;border-bottom:1px solid var(--s100);">
           <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;">
@@ -1059,7 +1059,7 @@ function parseCSV(text, type) {
     if (type === 'students') {
         wrap.innerHTML = `
             <table>
-              <thead><tr><th>#</th><th>Nama</th><th>Matrik</th><th>Tingkatan</th><th>Halaqah</th><th>Emel Wali</th><th>Nama Wali</th><th>Tel. Wali</th></tr></thead>
+              <thead><tr><th>#</th><th>Nama</th><th>Matrik</th><th>Tingkatan</th><th>Halaqah</th><th>Emel Ibu Bapa</th><th>Nama Ibu Bapa</th><th>Tel. Ibu Bapa</th></tr></thead>
               <tbody>${rows.slice(0, 10).map((r, i) => `
                 <tr>
                   <td>${i+1}</td><td>${r.full_name||'–'}</td><td>${r.matric_no||'–'}</td>
@@ -1203,7 +1203,7 @@ async function importCSV(type) {
         resultEl.className = 'batch-result batch-ok';
         let nextStep = '';
         if (type === 'students')
-            nextStep = 'Pergi ke tab <strong>Semua Pelajar</strong> untuk sahkan wali dan halaqah.';
+            nextStep = 'Pergi ke tab <strong>Semua Pelajar</strong> untuk sahkan Ibu Bapa dan halaqah.';
         else
             nextStep = `Hantar reset kata laluan kepada setiap ${type === 'teachers' ? 'murabbi' : 'ibu bapa'} supaya mereka boleh tukar dari kata laluan sementara.`;
         resultEl.innerHTML = `<i class="fas fa-circle-check"></i> ${success} rekod berjaya diimport!${skippedNote}
@@ -1265,7 +1265,7 @@ function bindForms() {
                 document.getElementById('parentName').value.trim(),
                 document.getElementById('parentEmail').value.trim(),
                 document.getElementById('parentPass').value, 'parent');
-            showToast('Wali berjaya didaftarkan!', 'success');
+            showToast('Ibu Bapa berjaya didaftarkan!', 'success');
             e.target.reset();
             await loadDropdownData();
         } catch (err) { showToast('Ralat: ' + err.message, 'error'); }
@@ -1546,7 +1546,7 @@ async function submitEditParent() {
     const phone = document.getElementById('editParentPhone').value.trim();
     const email = document.getElementById('editParentEmail').value.trim().toLowerCase();
 
-    if (!name) { showToast('Sila masukkan nama wali murid.', 'error'); return; }
+    if (!name) { showToast('Sila masukkan nama Ibu Bapa murid.', 'error'); return; }
 
     const updates = { full_name: name, phone: phone || null };
     if (email) updates.email = email;
@@ -1554,7 +1554,7 @@ async function submitEditParent() {
     const { error } = await supabase.from('profiles').update(updates).eq('id', id);
 
     if (error) { showToast('Ralat: ' + error.message, 'error'); return; }
-    showToast('Maklumat wali murid berjaya dikemaskini!', 'success');
+    showToast('Maklumat Ibu Bapa murid berjaya dikemaskini!', 'success');
     closeModal('editParentModal');
     await loadDropdownData();
     loadParentsTable();
