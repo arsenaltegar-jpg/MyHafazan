@@ -6,6 +6,7 @@
 let selectedStudent = null;
 let myHalaqah = null;
 let myStudents = [];
+let modalOpenedFromDetail = false; // true when modal is opened via Detail Panel (new log OR edit)
 
 // Pagination
 const PAGE_SIZE = 10;
@@ -275,8 +276,8 @@ function openLogModal(studentId) {
     document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('selected'));
     document.querySelector('.type-btn[data-type="jadid"]')?.classList.add('selected');
 
-    // BUG FIX 2: Do NOT call loadStudentLogs here — log list with edit/delete
-    // belongs only in the Student Detail Panel, not the Log Modal.
+    // Modal opened directly from student card — not from Detail Panel
+    modalOpenedFromDetail = false;
 
     const modal = document.getElementById('logModal');
     modal.classList.remove('hidden');
@@ -289,7 +290,6 @@ function closeLogModal() {
     modal.classList.remove('flex');
 
     const submitBtn = document.getElementById('submitLogBtn');
-    const wasEditMode = !!(submitBtn && submitBtn.dataset.editLogId);
 
     // Reset edit mode
     if (submitBtn) {
@@ -297,12 +297,14 @@ function closeLogModal() {
         submitBtn.innerHTML = '<i class="fas fa-floppy-disk"></i> Simpan Log Tasmik';
     }
 
-    // If modal was opened from the Detail Panel (edit mode), return to it
-    // so the teacher lands back on the student profile instead of the main page.
+    // If modal was opened from the Detail Panel (new log OR edit), return to
+    // the student profile instead of dropping the teacher on the main page.
     const studentIdToReturn = selectedStudent?.id || null;
     selectedStudent = null;
+    const shouldReturnToDetail = modalOpenedFromDetail;
+    modalOpenedFromDetail = false;
 
-    if (wasEditMode && studentIdToReturn) {
+    if (shouldReturnToDetail && studentIdToReturn) {
         setTimeout(() => openStudentDetail(studentIdToReturn), 50);
     }
 }
@@ -382,6 +384,7 @@ function editLog(logId, page, type, quality, notes = '') {
     // The Detail Panel (z-index 1100) sits above the Log Modal (z-index 1000).
     // Close the panel first, then open the modal after its slide-out animation,
     // the same way openLogFromDetail() works.
+    modalOpenedFromDetail = true; // return to Detail Panel if modal is closed
     closeStudentDetail();
 
     setTimeout(() => {
@@ -565,10 +568,11 @@ async function submitLog() {
         const studentName = selectedStudent.full_name;
         const snapStudentId = currentStudentId; // already captured above
 
-        // Clear edit state BEFORE closeLogModal so it doesn't try to reopen
-        // the Detail Panel on its own — submitLog handles that below.
+        // Clear edit state AND detail-return flag BEFORE closeLogModal so it
+        // doesn't try to reopen the Detail Panel on its own — submitLog handles that below.
         const sb = document.getElementById('submitLogBtn');
         if (sb) delete sb.dataset.editLogId;
+        modalOpenedFromDetail = false;
 
         closeLogModal();
 
@@ -719,6 +723,7 @@ function closeStudentDetail() {
 
 function openLogFromDetail() {
     if (!selectedStudent) return;
+    modalOpenedFromDetail = true; // return to Detail Panel if modal is closed
     closeStudentDetail();
     setTimeout(() => openLogModal(selectedStudent.id), 320);
 }
