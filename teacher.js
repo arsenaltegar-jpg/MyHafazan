@@ -224,7 +224,7 @@ function renderStudentList(filter = '') {
           <div class="sc-right">
             <div class="hutang-pill ${pillClass}">${hutangDisplay}</div>
             <div class="sc-status ${statusClass}" style="margin-top:4px;"><i class="fas ${statusIcon}"></i> ${statusText}</div>
-            <div class="sc-log-btn" onclick="event.stopPropagation(); openLogModal(${student.id})"><i class="fas fa-pen-to-square"></i> Log</div>
+            <div class="sc-log-btn" onclick="event.stopPropagation(); openLogModalFromCard(${student.id})"><i class="fas fa-pen-to-square"></i> Log</div>
           </div>
         </div>`;
     }).join('');
@@ -253,6 +253,12 @@ function changePage(dir) {
 // MODAL: Open & Close
 // ============================================================
 
+function openLogModalFromCard(studentId) {
+    // Called from student card — modal should return to main page on close
+    modalOpenedFromDetail = false;
+    openLogModal(studentId);
+}
+
 function openLogModal(studentId) {
     selectedStudent = myStudents.find(s => s.id === studentId);
     if (!selectedStudent) return;
@@ -275,9 +281,6 @@ function openLogModal(studentId) {
     // Reset type buttons
     document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('selected'));
     document.querySelector('.type-btn[data-type="jadid"]')?.classList.add('selected');
-
-    // Modal opened directly from student card — not from Detail Panel
-    modalOpenedFromDetail = false;
 
     const modal = document.getElementById('logModal');
     modal.classList.remove('hidden');
@@ -570,6 +573,10 @@ async function submitLog() {
 
         // Clear edit state AND detail-return flag BEFORE closeLogModal so it
         // doesn't try to reopen the Detail Panel on its own — submitLog handles that below.
+        // Capture before clearing — needed to decide whether to reopen Detail Panel
+        const wasFromDetail = modalOpenedFromDetail;
+
+        // Clear BEFORE closeLogModal so closeLogModal doesn't also try to reopen
         const sb = document.getElementById('submitLogBtn');
         if (sb) delete sb.dataset.editLogId;
         modalOpenedFromDetail = false;
@@ -583,21 +590,10 @@ async function submitLog() {
             'success'
         );
 
-        // Refresh the Detail Panel:
-        // - For a NEW log: panel may still be open → reload its logs.
-        // - For an EDIT from detail: editLog() closed the panel before opening
-        //   the modal, so we re-open it here to show the updated records.
-        const panel = document.getElementById('studentDetailPanel');
-        if (wasEditing) {
-            // Re-open detail panel so teacher sees the updated log list
+        // Reopen Detail Panel if the modal was opened from it (new log OR edit).
+        // This returns the teacher to the student profile with refreshed data.
+        if (wasFromDetail) {
             openStudentDetail(snapStudentId);
-        } else if (panel && panel.classList.contains('open')) {
-            loadStudentLogs(snapStudentId);
-            const updatedStudent = myStudents.find(s => s.id === snapStudentId);
-            if (updatedStudent) {
-                document.getElementById('detailMeta').textContent =
-                    `ms. ${updatedStudent.current_page} · Juzuk ${updatedStudent.current_juz} · T${updatedStudent.form_level || '–'}`;
-            }
         }
 
     } catch (err) {
@@ -729,6 +725,7 @@ function openLogFromDetail() {
 }
 
 window.openLogModal        = openLogModal;
+window.openLogModalFromCard = openLogModalFromCard;
 window.closeLogModal       = closeLogModal;
 window.submitLog           = submitLog;
 window.editLog             = editLog;
