@@ -106,6 +106,18 @@ CREATE TABLE IF NOT EXISTS announcements (
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- Keep-alive target for scheduled GitHub Actions pings.
+-- This table stores no app data; it only gives the REST API a harmless row to read.
+CREATE TABLE IF NOT EXISTS keep_alive (
+    id INT PRIMARY KEY DEFAULT 1,
+    touched_at TIMESTAMPTZ DEFAULT NOW(),
+    CONSTRAINT keep_alive_single_row CHECK (id = 1)
+);
+
+INSERT INTO keep_alive (id)
+VALUES (1)
+ON CONFLICT (id) DO NOTHING;
+
 -- ============================================================
 -- INDEXES
 -- ============================================================
@@ -195,6 +207,7 @@ ALTER TABLE students ENABLE ROW LEVEL SECURITY;
 ALTER TABLE hifz_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE rpt_targets ENABLE ROW LEVEL SECURITY;
 ALTER TABLE announcements ENABLE ROW LEVEL SECURITY;
+ALTER TABLE keep_alive ENABLE ROW LEVEL SECURITY;
 
 -- ============================================================
 -- HELPER FUNCTIONS
@@ -506,6 +519,14 @@ CREATE POLICY "Admins have full access to school_holidays"
 DROP POLICY IF EXISTS "All authenticated users can read school_holidays" ON school_holidays;
 CREATE POLICY "All authenticated users can read school_holidays"
     ON school_holidays FOR SELECT USING (auth.uid() IS NOT NULL);
+
+-- ============================================================
+-- RLS POLICIES: keep_alive
+-- ============================================================
+
+DROP POLICY IF EXISTS "Anyone can read keep_alive" ON keep_alive;
+CREATE POLICY "Anyone can read keep_alive"
+    ON keep_alive FOR SELECT USING (true);
 
 -- ============================================================
 -- FIX #5: student_progress VIEW — RLS workaround
